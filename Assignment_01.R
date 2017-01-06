@@ -15,3 +15,4 @@ colnames(wine) <- c("Class", "Alcohol", "Malic_Acid", "Ash", "Ash_Alcalinity",
                     "Nonflavanoid_Phenols", "Proanthocyanins", 
                     "Color_Intensity", "Hue", "OD280_OD315", "Proline")
 # pull test
+# push test
