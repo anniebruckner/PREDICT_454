@@ -78,5 +78,34 @@ do.call("grid.arrange", c(plots))
 ml <- marrangeGrob(grobs = plots, nrow = 2, ncol = 7)
 ml
 
+# Examine correlations
+M <- cor(wine[sapply(wine, is.numeric)],use="complete.obs")
+
+correlations <- data.frame(cor(wine[sapply(wine, is.numeric)],use="complete.obs"))
+
+significant.correlations <- data.frame(
+  var1 = character(),
+  var2 = character(),
+  corr = numeric())
+
+for (i in 1:nrow(correlations)){
+  for (j in 1:ncol(correlations)){
+    tmp <- data.frame(
+      var1 = as.character(colnames(correlations)[j]),
+      var2 = as.character(rownames(correlations)[i]),
+      corr = correlations[i,j])
+    
+    if (!is.na(correlations[i,j])) {
+      if (correlations[i,j] > .5 & as.character(tmp$var1) != as.character(tmp$var2)
+          | correlations[i,j] < -.5 & as.character(tmp$var1) != as.character(tmp$var2) ) {
+        significant.correlations <- rbind(significant.correlations,tmp) }
+    }
+  }
+}
+
+significant.correlations <- significant.correlations[order(abs(significant.correlations$corr),decreasing=TRUE),] 
+significant.correlations <- significant.correlations[which(!duplicated(significant.correlations$corr)),]
+significant.correlations
+
 
 
