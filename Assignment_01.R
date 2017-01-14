@@ -177,25 +177,42 @@ corrplot(cor(wine[wine$Class == 3, noClass]),
          mar=c(3,5,3,3))
 
 # Create tree model
-fancyRpartPlot(rpart(wine$Class ~ ., data = wine), sub = "")
+fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
 
 #######################################################
 # Model-Based EDA
 #######################################################
 
-model.lda <- lda(Class ~ ., data = wine)
-summary(model.lda)
-plot(model.lda)
-
-wine$Class = as.numeric(wine$Class)
-model.pca = prcomp(wine, scale = T)
+# Create PCA model
+wine$Class <- as.numeric(wine$Class) # must change Class to numeric to model
+model.pca <- prcomp(wine, scale = T) # prcomp is preferred to princomp for accuracy
+summary(model.pca)
+screeplot(model.pca, type = c("lines"), main = "PCA", sub = "Number of Components")
 biplot(model.pca, xlabs = wine[, "Class"])
+
+# Change Class back to factor for LDA model
 wine$Class = as.factor(wine$Class)
 
-#Use backward subset selection on model.log1b
-model.regfit.bwd<-regsubsets(Class~ .,data = wine, nvmax=13, method="backward")
-summary(model.regfit.bwd)
+# Create LDA model
+model.lda <- lda(Class ~ ., data = wine)
+plot(model.lda)
 
-model.lda2 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinity + OD280_OD315 + Alcohol, data = wine)
-summary(model.lda2)
+# Use backward subset selection on model.log1b
+model.lda.bwd<-regsubsets(Class~ .,data = wine, nvmax=13, method="backward")
+summary(model.lda.bwd)
+
+# Create second LDA model using top 3 selected variables
+model.lda2 <- lda(Class ~ Flavanoids + Proline + Color_Intensity, data = wine)
 plot(model.lda2)
+
+# Create second LDA model using top 6 selected variables
+model.lda3 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinity + OD280_OD315 + Alcohol, data = wine)
+plot(model.lda3)
+
+# Create second LDA model using top 10 selected variables
+model.lda4 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinity + OD280_OD315 + Alcohol + Total_Phenols + Ash + Malic_Acid + Nonflavanoid_Phenols, data = wine)
+plot(model.lda4)
+
+#######################################################
+# END
+#######################################################
