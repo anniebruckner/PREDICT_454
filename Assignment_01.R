@@ -81,13 +81,56 @@ wine$Proline <-as.numeric(wine$Proline)
 # Ensure changes to data types worked
 str(wine)
 
-# Examine quantiles of wine attributes
+# Examine quantiles of wine variables
 lapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
-sapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)) # better organized
+sapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)) # more readable
 
-boxplot(wine$Alcohol)
-boxplot(wine$Proline)
+# Create plots of Proline to examine potential outliers
 histogram(~ Proline, data = wine, col = "steelblue")
+
+bwplot(~ Proline, data = wine, par.settings = list(
+                     box.umbrella=list(col= "black"), 
+                     box.dot=list(col= "black"), 
+                     box.rectangle = list(col= "black", fill = "steelblue")))
+
+# Create boxplots for all variables--need to figure out how to print variables on xlab               
+for (i in wine[2:14]){
+  p <- bwplot(~ i, data = wine, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = paste(names(i)))
+  print(p)
+}
+
+
+
+
+for (i in wine[2:14]){
+  p <- bwplot(~ i, data = wine, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = for (j in wine$[i]){
+      paste(j)
+    }
+    )
+  print(p)
+}
+
+
+lapply(wine[2:14], bwplot, data = wine)
+
+# Plot the variables
+wineBoxplots <- function (data, column){
+  ggplot(data = wine, aes_string(x = column, y = wine$Class)) +
+    geom_boxplot(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+boxplots <- lapply(colnames(wine), wineBoxplots, data = wine)
+length(plots)
+do.call("grid.arrange", c(boxplots, nrow=7))
 
 #######################################################
 # EDA
