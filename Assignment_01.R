@@ -5,13 +5,18 @@
 # All data and attribute names for the wine data are located here:
 # http://archive.ics.uci.edu/ml/machine-learning-databases/wine/
 
-# Install Packages if they don't current exist on this machine
+#######################################################
+# Workspace Setup
+#######################################################
+
+# Install Packages if they don't current exist
 list.of.packages <- c("doBy"
                       ,"lazyeval"
                       ,"psych"
                       ,"lars"
                       ,"GGally"
                       ,"ggplot2"
+                      ,"grid"
                       ,"gridExtra"
                       ,"corrgram"
                       ,"corrplot"
@@ -56,28 +61,37 @@ head(wine)
 #######################################################
 
 # Explore the data -- how big is it, what types of variables included, distributions and missing values.
-dim(wine) # 178  14
-summary(wine) # no NA/missing values
-str(wine) # all num except Class, Magnesium, and Proline are int
 class(wine) # data.frame
+dim(wine) # 178  14
 nrow(wine) # 178 rows
 ncol(wine) # 14 columns/variables
 names(wine)
+summary(wine) # no NA/missing values
+str(wine) # all num except Class, Magnesium, and Proline are int
+# Perhaps Proline has some outliers--the difference between the 3rd quartile and max value is large
+# and is the same as the amount between the 3rd quartile and the min value (~700)
 
 # Visualize the variables
-plots <- vector("list", 14)
-names <- colnames(wine)
+#plots <- vector("list", 14)
+#names <- colnames(wine)
 
-plot_vars <- function (data, column)
-  ggplot(data = wine, aes_string(x = column)) +
+plot_vars <- function (data, column){
+  p <- ggplot(data = wine, aes_string(x = column)) +
   geom_histogram(color =I("black"), fill = I("steelblue"))+
-  xlab(column)
+  xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+  return(p)
+  }
 
 plots <- lapply(colnames(wine), plot_vars, data = wine)
+ml <- marrangeGrob(plots, nrow=2, ncol=7)
+ml
+
+do.call(grid.arrange, c(plots))
 
 n <- length(plots)
 nCol <- floor(sqrt(n))
 do.call("grid.arrange", c(plots))
+grid.arrange(c(plots), ncol=7)
 
 # This shows the plots as a 2x7 display
 ml <- marrangeGrob(grobs = plots, nrow = 2, ncol = 7)
@@ -175,9 +189,18 @@ fancyRpartPlot(rpart(wine$Class ~ ., data = wine), sub = "")
 #######################################################
 
 model.lda <- lda(Class ~ ., data = wine)
+summary(model.lda)
 plot(model.lda)
 
 wine$Class = as.numeric(wine$Class)
 model.pca = prcomp(wine, scale = T)
 biplot(model.pca, xlabs = wine[, "Class"])
 wine$Class = as.factor(wine$Class)
+
+#Use backward subset selection on model.log1b
+model.regfit.bwd<-regsubsets(Class~ .,data = wine, nvmax=13, method="backward")
+summary(model.regfit.bwd)
+
+model.lda2 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinity + OD280_OD315 + Alcohol, data = wine)
+summary(model.lda2)
+plot(model.lda2)
