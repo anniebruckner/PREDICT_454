@@ -66,38 +66,23 @@ dim(wine) # 178  14
 nrow(wine) # 178 rows
 ncol(wine) # 14 columns/variables
 names(wine)
-summary(wine) # no NA/missing values
 str(wine) # all num except Class, Magnesium, and Proline are int
+summary(wine) # no NA/missing values
 # Perhaps Proline has some outliers--the difference between the 3rd quartile and max value is large
 # and is the same as the amount between the 3rd quartile and the min value (~700)
 
-# Visualize the variables
-#plots <- vector("list", 14)
-#names <- colnames(wine)
-
+# Plot the variables
 plot_vars <- function (data, column){
-  p <- ggplot(data = wine, aes_string(x = column)) +
+  ggplot(data = wine, aes_string(x = column)) +
   geom_histogram(color =I("black"), fill = I("steelblue"))+
   xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
-  return(p)
   }
 
 plots <- lapply(colnames(wine), plot_vars, data = wine)
-ml <- marrangeGrob(plots, nrow=2, ncol=7)
-ml
+length(plots)
+do.call("grid.arrange", c(plots, nrow=2))
 
-do.call(grid.arrange, c(plots))
-
-n <- length(plots)
-nCol <- floor(sqrt(n))
-do.call("grid.arrange", c(plots))
-grid.arrange(c(plots), ncol=7)
-
-# This shows the plots as a 2x7 display
-ml <- marrangeGrob(grobs = plots, nrow = 2, ncol = 7)
-ml
-
-# Make Class a factor since it takes only 3 values (representing low, medium, and high class/quality)
+# Make Class a factor since it takes only 3 values (maybe representing low, medium, and high wine class/quality)
 wine$Class <- as.factor(wine$Class)
 
 # Make Magnesium and Proline numeric instead of integers
