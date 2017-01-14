@@ -128,23 +128,10 @@ histogram(~ OD280_OD315 | Class, data = wine,
 bwplot(~ Nonflavanoid_Phenols | Class, data = wine, # uses lattice to create trellis boxplots
        layout = c(3, 1))
 
-# Create object of wine excluding Class
-noClass <- colnames(wine[sapply(wine, is.numeric)])
-
-## Visualize correlations
-corrplot(cor(wine[wine$Class == 1, noClass]),
-         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
-
-corrplot(cor(wine[wine$Class == 2, noClass]), 
-         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
-
-corrplot(cor(wine[wine$Class == 3, noClass]), 
-         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
-
 # Examine correlations among just numeric variables
-C <- cor(wine[sapply(wine, is.numeric)], use="complete.obs")
+c <- cor(wine[2:14], use="complete.obs")
 
-correlations <- data.frame(cor(wine[sapply(wine, is.numeric)],use="complete.obs"))
+correlations <- data.frame(c)
 
 significant.correlations <- data.frame(
   var1 = character(),
@@ -170,6 +157,26 @@ significant.correlations <- significant.correlations[order(abs(significant.corre
 significant.correlations <- significant.correlations[which(!duplicated(significant.correlations$corr)),]
 significant.correlations
 
+# Create object containing names of only numeric variables
+noClass <- colnames(wine[2:14])
+
+# Visualize correlations between numberic variables and each Class factor
+corrplot(cor(wine[wine$Class == 1, noClass]),
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+         title = "Wine Class 1 Correlations",
+         mar=c(3,5,3,3))
+
+corrplot(cor(wine[wine$Class == 2, noClass]), 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+         title = "Wine Class 2 Correlations",
+         mar=c(3,5,3,3))
+
+corrplot(cor(wine[wine$Class == 3, noClass]), 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+         title = "Wine Class 3 Correlations",
+         mar=c(3,5,3,3))
+
+# Create tree model
 fancyRpartPlot(rpart(wine$Class ~ ., data = wine), sub = "")
 
 #######################################################
