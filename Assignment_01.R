@@ -126,8 +126,21 @@ histogram(~ OD280_OD315 | Class, data = wine,
 bwplot(~ Nonflavanoid_Phenols | Class, data = wine, # uses lattice to create trellis boxplots
        layout = c(3, 1))
 
-# Examine correlations
-M <- cor(wine[sapply(wine, is.numeric)], use="complete.obs")
+# Create object of wine excluding Class
+noClass <- colnames(wine[sapply(wine, is.numeric)])
+
+## Visualize correlations
+corrplot(cor(wine[wine$Class == 1, noClass]),
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
+
+corrplot(cor(wine[wine$Class == 2, noClass]), 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
+
+corrplot(cor(wine[wine$Class == 3, noClass]), 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
+
+# Examine correlations among just numeric variables
+C <- cor(wine[sapply(wine, is.numeric)], use="complete.obs")
 
 correlations <- data.frame(cor(wine[sapply(wine, is.numeric)],use="complete.obs"))
 
@@ -155,6 +168,16 @@ significant.correlations <- significant.correlations[order(abs(significant.corre
 significant.correlations <- significant.correlations[which(!duplicated(significant.correlations$corr)),]
 significant.correlations
 
+fancyRpartPlot(rpart(wine$Class ~ ., data = wine), sub = "")
 
+#######################################################
+# Model-Based EDA
+#######################################################
 
+model.lda <- lda(Class ~ ., data = wine)
+plot(model.lda)
 
+wine$Class = as.numeric(wine$Class)
+model.pca = prcomp(wine, scale = T)
+biplot(model.pca, xlabs = wine[, "Class"])
+wine$Class = as.factor(wine$Class)
