@@ -71,9 +71,6 @@ summary(wine) # no NA/missing values
 # Perhaps Proline has some outliers--the difference between the 3rd quartile and max value is large
 # and is the same as the amount between the 3rd quartile and the min value (~700)
 
-# Make Class a factor since it takes only 3 values (maybe representing low, medium, and high wine class/quality)
-wine$Class <- as.factor(wine$Class)
-
 # Make Magnesium and Proline numeric instead of integers (since it will be easier to work with all the same data type)
 wine$Magnesium <- as.numeric(wine$Magnesium)
 wine$Proline <-as.numeric(wine$Proline)
@@ -81,8 +78,26 @@ wine$Proline <-as.numeric(wine$Proline)
 # Ensure changes to data types worked
 str(wine)
 
+# Plot the variables
+plot_vars <- function (data, column){
+  ggplot(data = wine, aes_string(x = column)) +
+    geom_histogram(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+plots <- lapply(colnames(wine), plot_vars, data = wine)
+length(plots)
+do.call("grid.arrange", c(plots, nrow=2))
+
+# Make Class a factor since it takes only 3 values (maybe representing low, medium, and high wine class/quality)
+## Must run above plot code before changing Class to a factor since geom_histogram can't plot factors--geom_bar can but looks worse.
+wine$Class <- as.factor(wine$Class)
+
+# Ensure changes to Class worked
+str(wine)
+
 # Examine quantiles of wine variables
-lapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
+#lapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
 sapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)) # more readable
 
 # Create plots of Proline to examine potential outliers
@@ -103,49 +118,9 @@ for (i in wine[2:14]){
   print(p)
 }
 
-
-
-
-for (i in wine[2:14]){
-  p <- bwplot(~ i, data = wine, par.settings = list(
-    box.umbrella=list(col= "black"), 
-    box.dot=list(col= "black"), 
-    box.rectangle = list(col= "black", fill = "steelblue")),
-    xlab = for (j in wine$[i]){
-      paste(j)
-    }
-    )
-  print(p)
-}
-
-
-lapply(wine[2:14], bwplot, data = wine)
-
-# Plot the variables
-wineBoxplots <- function (data, column){
-  ggplot(data = wine, aes_string(x = column, y = wine$Class)) +
-    geom_boxplot(color =I("black"), fill = I("steelblue"))+
-    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
-}
-
-boxplots <- lapply(colnames(wine), wineBoxplots, data = wine)
-length(plots)
-do.call("grid.arrange", c(boxplots, nrow=7))
-
 #######################################################
 # EDA
 #######################################################
-
-# Plot the variables
-plot_vars <- function (data, column){
-  ggplot(data = wine, aes_string(x = column)) +
-    geom_histogram(color =I("black"), fill = I("steelblue"))+
-    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
-}
-
-plots <- lapply(colnames(wine), plot_vars, data = wine)
-length(plots)
-do.call("grid.arrange", c(plots, nrow=2))
 
 histogram(~ OD280_OD315 | Class, data = wine, 
           layout = c(3, 1), col = "steelblue")
