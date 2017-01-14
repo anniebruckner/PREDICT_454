@@ -71,45 +71,19 @@ summary(wine) # no NA/missing values
 # Perhaps Proline has some outliers--the difference between the 3rd quartile and max value is large
 # and is the same as the amount between the 3rd quartile and the min value (~700)
 
-# Plot the variables
-plot_vars <- function (data, column){
-  ggplot(data = wine, aes_string(x = column)) +
-  geom_histogram(color =I("black"), fill = I("steelblue"))+
-  xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
-  }
-
-plots <- lapply(colnames(wine), plot_vars, data = wine)
-length(plots)
-do.call("grid.arrange", c(plots, nrow=2))
-
 # Make Class a factor since it takes only 3 values (maybe representing low, medium, and high wine class/quality)
 wine$Class <- as.factor(wine$Class)
 
-# Make Magnesium and Proline numeric instead of integers
+# Make Magnesium and Proline numeric instead of integers (since it will be easier to work with all the same data type)
 wine$Magnesium <- as.numeric(wine$Magnesium)
 wine$Proline <-as.numeric(wine$Proline)
 
+# Ensure changes to data types worked
 str(wine)
 
-quantile(wine$Alcohol, c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)) 
-
-####
-quantiles = function(df, na.rm = T){
-  temp = data.frame()
-  cn = colnames(df[, !sapply(df, is.factor)])
-  for (num.var in cn){
-    qt = quantile(df[, num.var], na.rm = na.rm,
-                  probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
-    table.row = as.data.frame(cbind(num.var, 
-                                    round(cbind(t(qt)), digits = 2)))
-    temp = rbind(temp, table.row)
-  }
-  colnames(temp)[1] = "Variable"
-  return(temp)
-}
-
-quantiles(wine)
-####
+# Examine quantiles of wine attributes
+lapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
+sapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)) # better organized
 
 boxplot(wine$Alcohol)
 boxplot(wine$Proline)
@@ -118,6 +92,17 @@ histogram(~ Proline, data = wine, col = "steelblue")
 #######################################################
 # EDA
 #######################################################
+
+# Plot the variables
+plot_vars <- function (data, column){
+  ggplot(data = wine, aes_string(x = column)) +
+    geom_histogram(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+plots <- lapply(colnames(wine), plot_vars, data = wine)
+length(plots)
+do.call("grid.arrange", c(plots, nrow=2))
 
 histogram(~ OD280_OD315 | Class, data = wine, 
           layout = c(3, 1), col = "steelblue")
