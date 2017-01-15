@@ -213,6 +213,11 @@ plot(model.lda3)
 model.lda4 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinity + OD280_OD315 + Alcohol + Total_Phenols + Ash + Malic_Acid + Nonflavanoid_Phenols, data = wine)
 plot(model.lda4)
 
+# Create Random Forest model
+model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
+importance(model.RF)
+varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance")
+
 #######################################################
 # END
 #######################################################
