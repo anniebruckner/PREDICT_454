@@ -89,7 +89,7 @@ plots <- lapply(colnames(wine), plot_vars, data = wine)
 length(plots)
 do.call("grid.arrange", c(plots, nrow=2))
 
-# Make Class a factor since it takes only 3 values (maybe representing low, medium, and high wine class/quality)
+# Make Class a factor since it takes only 3 values (representing 3 different cultivars/orgins of wined)
 ## Must run above plot code before changing Class to a factor since geom_histogram can't plot factors--geom_bar can but looks worse.
 wine$Class <- as.factor(wine$Class)
 
@@ -103,10 +103,28 @@ sapply(wine[2:14], quantile, probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95,
 # Create plots of Proline to examine potential outliers
 histogram(~ Proline, data = wine, col = "steelblue")
 
-bwplot(~ Proline, data = wine, par.settings = list(
-                     box.umbrella=list(col= "black"), 
-                     box.dot=list(col= "black"), 
-                     box.rectangle = list(col= "black", fill = "steelblue")))
+Proline_box <- bwplot(~ Proline, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+# Create more box plots of variables to examine potential outliers indicated in histogram
+Ash_box <- bwplot(~ Ash, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Flavanoids_box <- bwplot(~ Flavanoids, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Hue_box <- bwplot(~ Hue, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+grid.arrange(Proline_box, Ash_box, Flavanoids_box, Hue_box, ncol=4)
 
 # Create boxplots for all variables--need to figure out how to print variables on xlab               
 for (i in wine[2:14]){
@@ -117,6 +135,36 @@ for (i in wine[2:14]){
     xlab = paste(names(i)))
   print(p)
 }
+
+# Hue, Color_Intensity, Proanthocyanins, Magnesium, Ash_Alcalinity, Ash, Malic_Acid all show potential outliers
+
+# Plot additional variables with potential outliers
+Color_Intensity_box <- bwplot(~ Color_Intensity, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Proanthocyanins_box <- bwplot(~ Proanthocyanins, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Magnesium_box <- bwplot(~ Magnesium, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Ash_Alcalinity_box <- bwplot(~ Ash_Alcalinity, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+Malic_Acid_box <- bwplot(~ Malic_Acid, data = wine, par.settings = list(
+  box.umbrella=list(col= "black"), 
+  box.dot=list(col= "black"), 
+  box.rectangle = list(col= "black", fill = "steelblue")))
+
+grid.arrange(Malic_Acid_box, Ash_Alcalinity_box, Magnesium_box, Proanthocyanins_box, Color_Intensity_box, ncol=5)
 
 #######################################################
 # EDA
