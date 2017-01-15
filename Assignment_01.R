@@ -206,17 +206,17 @@ noClass <- colnames(wine[2:14])
 corrplot(cor(wine[wine$Class == 1, noClass]),
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          title = "Wine Class 1 Correlations",
-         mar=c(3,5,3,3))
+         mar=c(1,3,1,3))
 
 corrplot(cor(wine[wine$Class == 2, noClass]), 
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          title = "Wine Class 2 Correlations",
-         mar=c(3,5,3,3))
+         mar=c(1,3,1,3))
 
 corrplot(cor(wine[wine$Class == 3, noClass]), 
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          title = "Wine Class 3 Correlations",
-         mar=c(3,5,3,3))
+         mar=c(1,3,1,3))
 
 # Create plots of just a few significant variables in realtion to Class
 histogram(~ Flavanoids | Class, data = wine, 
