@@ -218,26 +218,32 @@ corrplot(cor(wine[wine$Class == 3, noClass]),
          title = "Wine Class 3 Correlations",
          mar=c(1,3,1,3))
 
-# Create plots of just a few significant variables in realtion to Class
-histogram(~ Flavanoids | Class, data = wine, 
-          layout = c(3, 1), col = "steelblue")
+# Create plots of just a few significant variables in relation to Class
+Flavanoids_Class_hist <- histogram(~ Flavanoids | Class, data = wine, 
+          layout = c(3, 1), col = "steelblue", strip = strip.custom(bg="lightgrey"))
 
-bwplot(~ Flavanoids | Class, data = wine,
+Flavanoids_Class_box <- bwplot(~ Flavanoids | Class, data = wine,
        layout = c(3, 1),
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")))
+         box.rectangle = list(col= "black", fill = "steelblue")),
+         strip = strip.custom(bg="lightgrey"))
 
-histogram(~ OD280_OD315 | Class, data = wine, 
-          layout = c(3, 1), col = "steelblue")
+grid.arrange(Flavanoids_Class_hist, Flavanoids_Class_box, ncol=2)
 
-bwplot(~ OD280_OD315 | Class, data = wine,
+OD280_OD315_Class_hist <- histogram(~ OD280_OD315 | Class, data = wine, 
+          layout = c(3, 1), col = "steelblue", strip = strip.custom(bg="lightgrey"))
+
+OD280_OD315_Class_box <- bwplot(~ OD280_OD315 | Class, data = wine,
        layout = c(3, 1),
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")))
+         box.rectangle = list(col= "black", fill = "steelblue")),
+         strip = strip.custom(bg="lightgrey"))
+
+grid.arrange(OD280_OD315_Class_hist, OD280_OD315_Class_box, ncol=2)
 
 # Create tree model
 fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
