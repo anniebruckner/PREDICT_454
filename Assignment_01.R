@@ -170,12 +170,6 @@ grid.arrange(Malic_Acid_box, Ash_Alcalinity_box, Magnesium_box, Proanthocyanins_
 # EDA
 #######################################################
 
-histogram(~ OD280_OD315 | Class, data = wine, 
-          layout = c(3, 1), col = "steelblue")
-
-bwplot(~ Nonflavanoid_Phenols | Class, data = wine, # uses lattice to create trellis boxplots
-       layout = c(3, 1))
-
 # Examine correlations among just numeric variables
 c <- cor(wine[2:14], use="complete.obs")
 
@@ -223,6 +217,27 @@ corrplot(cor(wine[wine$Class == 3, noClass]),
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          title = "Wine Class 3 Correlations",
          mar=c(3,5,3,3))
+
+# Create plots of just a few significant variables in realtion to Class
+histogram(~ Flavanoids | Class, data = wine, 
+          layout = c(3, 1), col = "steelblue")
+
+bwplot(~ Flavanoids | Class, data = wine,
+       layout = c(3, 1),
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")))
+
+histogram(~ OD280_OD315 | Class, data = wine, 
+          layout = c(3, 1), col = "steelblue")
+
+bwplot(~ OD280_OD315 | Class, data = wine,
+       layout = c(3, 1),
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")))
 
 # Create tree model
 fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
