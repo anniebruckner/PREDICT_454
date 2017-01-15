@@ -183,6 +183,9 @@ fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
 # Model-Based EDA
 #######################################################
 
+# Create tree model (same as above)
+fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
+
 # Create PCA model
 wine$Class <- as.numeric(wine$Class) # must change Class to numeric to model
 model.pca <- prcomp(wine, scale = T) # prcomp is preferred to princomp for accuracy
