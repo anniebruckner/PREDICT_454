@@ -203,7 +203,7 @@ significant.correlations
 # Create object containing names of only numeric variables
 noClass <- colnames(wine[2:14])
 
-# Visualize correlations between numberic variables and each Class factor
+# Visualize correlations between numeric variables and each Class factor
 corrplot(cor(wine[wine$Class == 1, noClass]),
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          title = "Wine Class 1 Correlations",
@@ -264,7 +264,7 @@ par(mfrow=c(1,2))
 screeplot(model.pca, type = c("lines"), main = "PCA Model", sub = "Number of Components") # 4 components explain most of variability in the data
 biplot(model.pca, xlabs = wine[, "Class"], xlim=c(-0.20, 0.20))
 
-# Reset plot disply
+# Reset plot display
 par(mfrow=c(1,1))
 
 # Change Class back to factor for LDA model
