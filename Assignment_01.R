@@ -259,8 +259,12 @@ fancyRpartPlot(rpart(Class ~ ., data = wine), sub = "")
 wine$Class <- as.numeric(wine$Class) # must change Class to numeric to model
 model.pca <- prcomp(wine, scale = T) # prcomp is preferred to princomp for accuracy
 summary(model.pca)
-screeplot(model.pca, type = c("lines"), main = "PCA", sub = "Number of Components")
-biplot(model.pca, xlabs = wine[, "Class"])
+par(mfrow=c(1,2))
+screeplot(model.pca, type = c("lines"), main = "PCA Model", sub = "Number of Components") # 4 components explain most of variability in the data
+biplot(model.pca, xlabs = wine[, "Class"], xlim=c(-0.20, 0.20))
+
+# Reset plot disply
+par(mfrow=c(1,1))
 
 # Change Class back to factor for LDA model
 wine$Class = as.factor(wine$Class)
