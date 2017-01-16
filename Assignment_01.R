@@ -36,7 +36,8 @@ list.of.packages <- c("doBy"
                       ,"iterators"
                       ,"foreach"
                       ,"parallel"
-                      ,"lattice")
+                      ,"lattice"
+                      ,"caret")
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -271,7 +272,7 @@ wine$Class = as.factor(wine$Class)
 
 # Create LDA model
 model.lda <- lda(Class ~ ., data = wine)
-plot(model.lda)
+plot(model.lda, main = "LDA Model", cex = 0.90)
 
 # Use backward subset selection on model.log1b
 model.lda.bwd<-regsubsets(Class~ .,data = wine, nvmax=13, method="backward")
@@ -292,7 +293,7 @@ plot(model.lda4)
 # Create Random Forest model
 model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
 importance(model.RF)
-varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance")
+varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
 #######################################################
 # END
