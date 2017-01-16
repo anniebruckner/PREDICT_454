@@ -274,7 +274,7 @@ wine$Class = as.factor(wine$Class)
 model.lda <- lda(Class ~ ., data = wine)
 plot(model.lda, main = "LDA Model", cex = 0.90)
 
-# Use backward subset selection on model.log1b
+# Use backward subset selection on model.lda
 model.lda.bwd<-regsubsets(Class~ .,data = wine, nvmax=13, method="backward")
 summary(model.lda.bwd)
 
