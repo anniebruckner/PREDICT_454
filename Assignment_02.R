@@ -34,7 +34,8 @@ list.of.packages <- c("doBy"
                       ,"foreach"
                       ,"parallel"
                       ,"lattice"
-                      ,"caret")
+                      ,"caret"
+                      ,"plyr")
 
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -82,9 +83,33 @@ levels(data$store) <- c("Ashford", "Ausmans", "Blue_Nile", "Chalmers",
                       "Danford", "Fred_Meyer", "Goodmans", "Kay", 
                       "R_Holland", "Riddles", "University", "Zales")
 
+# Create boxplots for all predictor variables except carat
+for (i in 2:6){
+  toPlot = paste0("price ~ ", names(data)[i])
+  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = names(data)[i])
+  print(p)
+}
+
+# Create histograms for all predictor variables
+for (i in 1:6){
+  toPlot = paste0("price ~ ", names(data)[i])
+  p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
+# Create scatter plot for price~carat
+xyplot(price~carat, data = data, col = "steelblue")
+
+# Examine quantiles of carat
+quantile((data$carat), probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
+  
 #######################################################
 # EDA
 #######################################################
 
-# Creat tree plot
-fancyRpartPlot(rpart(data$price ~ ., data = data), sub = "")
+# Create tree plot
+fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
