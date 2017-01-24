@@ -35,7 +35,8 @@ list.of.packages <- c("doBy"
                       ,"parallel"
                       ,"lattice"
                       ,"caret"
-                      ,"plyr")
+                      ,"plyr"
+                      ,"car")
 
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -83,6 +84,13 @@ levels(data$store) <- c("Ashford", "Ausmans", "Blue_Nile", "Chalmers",
                       "Danford", "Fred_Meyer", "Goodmans", "Kay", 
                       "R_Holland", "Riddles", "University", "Zales")
 
+# Create histograms for all predictor variables
+for (i in 1:6){
+  toPlot = paste0("price ~ ", names(data)[i])
+  p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
 # Create boxplots for all predictor variables except carat
 for (i in 2:6){
   toPlot = paste0("price ~ ", names(data)[i])
@@ -94,22 +102,73 @@ for (i in 2:6){
   print(p)
 }
 
-# Create histograms for all predictor variables
-for (i in 1:6){
-  toPlot = paste0("price ~ ", names(data)[i])
-  p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
-  print(p)
-}
-
 # Create scatter plot for price~carat
 xyplot(price~carat, data = data, col = "steelblue")
 
-# Examine quantiles of carat
-quantile((data$carat), probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
-  
 #######################################################
 # EDA
 #######################################################
+
+# Calculate correlation between price and carat
+cor(data$price, data$carat) # 0.8796315
+
+# Examine quantiles of carat
+quantile((data$carat), probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
+
+# Create plots of price by factor predictor variables
+## Do LAPPLY, SAPPLY, or FOR LOOP for these plots ##
+
+# color
+histogram(~price | color, data = data,
+          col = "steelblue", strip = strip.custom(bg="lightgrey"))
+bwplot(~price | color, data = data,
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
+
+# clarity
+histogram(~price | clarity, data = data,
+          col = "steelblue", strip = strip.custom(bg="lightgrey"))
+bwplot(~price | clarity, data = data,
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
+
+# cut
+histogram(~price | cut, data = data,
+          col = "steelblue", strip = strip.custom(bg="lightgrey"))
+bwplot(~price | cut, data = data,
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
+
+# channel
+histogram(~price | channel, data = data,
+          col = "steelblue", strip = strip.custom(bg="lightgrey"),
+          layout = c(3, 1))
+bwplot(~price | channel, data = data,
+       layout = c(3, 1),
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
+
+# store
+histogram(~price | store, data = data,
+          col = "steelblue", strip = strip.custom(bg="lightgrey"))
+bwplot(~price | store, data = data,
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
 
 # Create tree plot
 fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
