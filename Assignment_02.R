@@ -116,54 +116,26 @@ cor(data$price, data$carat) # 0.8796315
 quantile((data$carat), probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
 
 # Create plots of price by factor predictor variables
-## Do LAPPLY, SAPPLY, or FOR LOOP for these plots ##
-
-# color
-histogram(~price | color, data = data,
+# Plots function for color, clarity, cut, and store
+myPlots <- function(variable){
+histogram(~price | variable, data = data,
           col = "steelblue", strip = strip.custom(bg="lightgrey"))
-bwplot(~price | color, data = data,
+bwplot(~price | variable, data = data,
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
          box.rectangle = list(col= "black", fill = "steelblue")),
        strip = strip.custom(bg="lightgrey"))
+}
 
-# clarity
-histogram(~price | clarity, data = data,
-          col = "steelblue", strip = strip.custom(bg="lightgrey"))
-bwplot(~price | clarity, data = data,
-       par.settings = list(
-         box.umbrella=list(col= "black"), 
-         box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
+lapply(data[c(2:4,6)],FUN=myPlots)
 
-# cut
-histogram(~price | cut, data = data,
-          col = "steelblue", strip = strip.custom(bg="lightgrey"))
-bwplot(~price | cut, data = data,
-       par.settings = list(
-         box.umbrella=list(col= "black"), 
-         box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
-
-# channel
+# Plot channel separately to specify layout
 histogram(~price | channel, data = data,
           col = "steelblue", strip = strip.custom(bg="lightgrey"),
           layout = c(3, 1))
 bwplot(~price | channel, data = data,
        layout = c(3, 1),
-       par.settings = list(
-         box.umbrella=list(col= "black"), 
-         box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
-
-# store
-histogram(~price | store, data = data,
-          col = "steelblue", strip = strip.custom(bg="lightgrey"))
-bwplot(~price | store, data = data,
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
