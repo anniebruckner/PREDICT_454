@@ -210,6 +210,16 @@ dim(train) # 298   7
 head(test)
 dim(test) # 127   7
 
+# Fit a naïve regression model using backwards variable selection
+model.1.bwd <- regsubsets(price~ .,data = train, nvmax=6, method="backward")
+
+
+
+summary(model.lda.bwd)
+
+predictors <- data[1:6]
+predictors.train <- train[1:6]
+class(predictors.train)
 
 
 # Create tree plot
