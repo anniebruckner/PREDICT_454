@@ -6,6 +6,9 @@
 # Workspace Setup
 #######################################################
 
+# Reset plot display
+par(mfrow=c(1,1))
+
 # Install Packages if they don't current exist
 list.of.packages <- c("doBy"
                       ,"lazyeval"
@@ -36,6 +39,7 @@ list.of.packages <- c("doBy"
                       ,"lattice"
                       ,"caret"
                       ,"plyr"
+                      ,"dplyr"
                       ,"car")
 
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -102,12 +106,12 @@ for (i in 2:6){
   print(p)
 }
 
-# Create scatter plot for price~carat
-xyplot(price~carat, data = data, col = "steelblue")
-
 #######################################################
 # EDA
 #######################################################
+
+# Create scatter plot for price~carat
+xyplot(price~carat, data = data, col = "steelblue")
 
 # Calculate correlation between price and carat
 cor(data$price, data$carat) # 0.8796315
@@ -115,26 +119,47 @@ cor(data$price, data$carat) # 0.8796315
 # Examine quantiles of carat
 quantile((data$carat), probs = c(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99))
 
+# Plot carat
+ch <- histogram(~carat, data = data,
+                col = "steelblue", strip = strip.custom(bg="lightgrey"))
+ch
+cb <- bwplot(~carat, data = data,
+             par.settings = list(
+               box.umbrella=list(col= "black"), 
+               box.dot=list(col= "black"), 
+               box.rectangle = list(col= "black", fill = "steelblue")),
+             strip = strip.custom(bg="lightgrey"))
+cb
+
+cq <- qqmath(~carat, data = data, col = "steelblue")
+cq
+
+grid.arrange(ch, cb, cq, ncol=3)
+
 # Create plots of price by factor predictor variables
 # Plots function for color, clarity, cut, and store
+
+## NEED TO MAKE FUNCTION THAT PLOTS BOTH TYPES OF PLOT
 myPlots <- function(variable){
-histogram(~price | variable, data = data,
+h1 <- histogram(~price | variable, data = data,
           col = "steelblue", strip = strip.custom(bg="lightgrey"))
-bwplot(~price | variable, data = data,
+b1 <- bwplot(~price | variable, data = data,
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
          box.rectangle = list(col= "black", fill = "steelblue")),
        strip = strip.custom(bg="lightgrey"))
+
+grid.arrange(h1, b1, ncol=2)
 }
 
 lapply(data[c(2:4,6)],FUN=myPlots)
 
 # Plot channel separately to specify layout
-histogram(~price | channel, data = data,
+h2 <- histogram(~price | channel, data = data,
           col = "steelblue", strip = strip.custom(bg="lightgrey"),
           layout = c(3, 1))
-bwplot(~price | channel, data = data,
+b2 <- bwplot(~price | channel, data = data,
        layout = c(3, 1),
        par.settings = list(
          box.umbrella=list(col= "black"), 
@@ -142,5 +167,59 @@ bwplot(~price | channel, data = data,
          box.rectangle = list(col= "black", fill = "steelblue")),
        strip = strip.custom(bg="lightgrey"))
 
+grid.arrange(h2, b2, ncol=2)
+
+# Examine mean price given various predictors
+mean(data$price[data$carat>1]) # 8568.149
+mean(data$price[data$carat<1]) # 3038.145
+mean(data$price[data$carat>2]) # 15167.07
+
+mean(data$price[data$color=="D"]) # 7378.833
+mean(data$price[data$color=="E"]) # 6389.983
+mean(data$price[data$color=="L"]) # 3349.2
+
+mean(data$price[data$cut=="Ideal"]) # 5767.357
+mean(data$price[data$cut=="Not_Ideal"]) # 6690.494
+
+mean(data$price[data$channel=="Internet"]) # 6721.05
+mean(data$price[data$channel=="Mall"]) # 4848.492
+mean(data$price[data$channel=="Independent"]) # 5790.458
+
+mean(data$price[data$store=="Kay"]) # 6274.071
+mean(data$price[data$store=="Fred_Meyer"]) # 5318.933
+
+mean(data$price[data$clarity=="IF"]) # 5608.909
+mean(data$price[data$clarity=="I2"]) # 2949.5
+
+mean(data$price[data$clarity=="IF" & data$color=="D"]) # 15909
+
+#######################################################
+# Model Build
+#######################################################
+
+# Create train/test sets (70/30)
+dim(data) # 425: 0.70*425 = 297.5 (train should have 297 or 298 observations)
+
+set.seed(123)
+train <- sample_frac(data, 0.70)
+train_id <- as.numeric(rownames(train)) 
+test <- data[-train_id,]
+
+head(train)
+dim(train) # 298   7
+head(test)
+dim(test) # 127   7
+
+
+
 # Create tree plot
 fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
+
+
+### Discarded Code ###
+
+trainIndex <- createDataPartition(data$price, p = 0.70, list = F)
+head(trainIndex)
+
+train <- data[ trainIndex,]
+test  <- data[-trainIndex,]
