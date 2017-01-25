@@ -211,7 +211,18 @@ head(test)
 dim(test) # 127   7
 
 # Fit a naïve regression model using backwards variable selection
-model.1.bwd <- regsubsets(price~ .,data = train, nvmax=6, method="backward")
+
+model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, method="backward")
+model.1.bwd <- regsubsets(price ~ carat + factor(color) + factor(clarity) + factor(cut) + factor(channel) + factor(store), data = train, nvmax=6, method="backward")
+
+model.1.bwd <- regsubsets(price ~ ., data = train, method="backward")
+summary(model.1.bwd)
+# store produces this warning:
+# In leaps.setup(x, y, wt = wt, nbest = nbest, nvmax = nvmax, force.in = force.in,  :
+# 2  linear dependencies found
+
+model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, nvmax=6, method="backward")
+model.1.bwd <- regsubsets(train$price ~ train$carat + train$color + train$clarity + train$cut + train$channel + train$store, data = train, nvmax=6, method="backward")
 
 
 
