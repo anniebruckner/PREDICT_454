@@ -210,21 +210,28 @@ dim(train) # 298   7
 head(test)
 dim(test) # 127   7
 
-# Fit a naïve regression model using backwards variable selection
-
-model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, method="backward")
-model.1.bwd <- regsubsets(price ~ carat + factor(color) + factor(clarity) + factor(cut) + factor(channel) + factor(store), data = train, nvmax=6, method="backward")
-
-model.1.bwd <- regsubsets(price ~ ., data = train, method="backward")
+# Fit a naïve regression model using backwards variable selection (nvmax = 31 to capture all factor levels)
+model.1.bwd <- regsubsets(price ~ ., data = train, nvmax = 31, method="backward")
 summary(model.1.bwd)
 # store produces this warning:
 # In leaps.setup(x, y, wt = wt, nbest = nbest, nvmax = nvmax, force.in = force.in,  :
 # 2  linear dependencies found
+# I found this out by adding in each of the predictors separately.
+# model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, nvmax=6, method="backward")
 
-model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, nvmax=6, method="backward")
-model.1.bwd <- regsubsets(train$price ~ train$carat + train$color + train$clarity + train$cut + train$channel + train$store, data = train, nvmax=6, method="backward")
 
 
+m1 <- lm(price ~ carat + color + clarity + cut + channel, data = train)  #Create a linear model
+#resid(m1) #List of residuals
+plot(density(resid(m1))) #A density plot
+plot(m1)
+qqnorm(resid(m1)) # A quantile normal plot - good for checking normality
+qqline(resid(m1))
+vif(m1)
+m_all <- lm(price ~ carat + color + clarity + cut + channel + store, data = train)  #Create a linear model
+vif(m_all)
+alias(m_all)
+# store$University and store$Zales are aliased
 
 summary(model.lda.bwd)
 
