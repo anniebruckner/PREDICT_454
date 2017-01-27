@@ -194,7 +194,7 @@ mean(data$price[data$clarity=="I2"]) # 2949.5
 mean(data$price[data$clarity=="IF" & data$color=="D"]) # 15909
 
 #######################################################
-# Model Build
+# Model Build -- Exploration Part 1
 #######################################################
 
 # Create train/test sets (70/30)
@@ -230,7 +230,6 @@ vif(model.all.lm) # won't calculate because "there are aliased coefficients in t
 alias(model.all.lm)
 # store$University and store$Zales are aliased--maybe good to leave them out, or maybe store entirely
 
-
 # Fit a naïve regression model using backwards variable selection (nvmax = 29 to capture all factor levels)
 model.1.bwd <- regsubsets(price ~ ., data = train, nvmax = 29, method="backward")
 summary(model.1.bwd) # the first level of each factorized variable doesn't appear in the output
@@ -240,35 +239,140 @@ summary(model.1.bwd) # the first level of each factorized variable doesn't appea
 # I found this out by adding in each of the predictors separately
 # model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, nvmax=6, method="backward")
 
-reg.summary <- summary(model.1.bwd)
-reg.summary$rsq
-reg.summary$adjr2
+reg.summary.bwd <- summary(model.1.bwd)
+names(reg.summary.bwd)
+reg.summary.bwd$rsq
+reg.summary.bwd$adjr2
 
 # Why did setting method="backward" cause the best models based on adjr2 and cp to change?
-which.max(reg.summary$adjr2) # 24: adjr2 = 0.9146926
-which.min(reg.summary$cp) # 22: cp = 18.46462
-which.min(reg.summary$bic) # 18: bic = -629.6917
+which.max(reg.summary.bwd$adjr2) # 24: adjr2 = 0.9146926
+which.min(reg.summary.bwd$cp) # 22: cp = 18.46462
+which.min(reg.summary.bwd$bic) # 18: bic = -629.6917
+# 22 variables is good compromise based on metrics
 
-
-m1 <- lm(price ~ carat + color + clarity + cut + channel, data = train)  #Create a linear model
-#resid(m1) #List of residuals
-plot(density(resid(m1))) #A density plot
+# Create naïve model using top 5 predictors
+m1 <- lm(price ~ carat + (color=="I") + (color=="J") + (color=="K") + (color=="L"), data = train)
+#resid(m1) # list of residuals
+plot(density(resid(m1)))
+par(mfrow=c(1,4))
 plot(m1)
-qqnorm(resid(m1)) # A quantile normal plot - good for checking normality
-qqline(resid(m1))
-vif(m1)
+par(mfrow=c(1,1))
+AIC(m1) # 5376.918
+vif(m1) # all close to 1 - GOOD
 
+# Should you make transformations to the response variable or some predictor variables?
+par(mfrow=c(2,2))
+hist(data$price) # right-skewed
+hist(train$price) # right-skewed
+hist(data$carat)
+hist(train$carat)
+# The distributions appear similar regardless of full or training data set
 
+# Transform price
+par(mfrow=c(1,1))
+log_price_d <- log(data$price)
+hist(log_price_d)
+log_price <- log(train$price)
+hist(log_price)
+#log_carat <- log(train$carat) # doesn't help
+#hist(log_carat)
 
-summary(model.lda.bwd)
+# Plot price and log_price
+ph <- histogram(~price, data = train,
+                col = "steelblue", strip = strip.custom(bg="lightgrey"))
+ph_log <- histogram(~log_price, data = train,
+                col = "steelblue", strip = strip.custom(bg="lightgrey"))
 
-predictors <- data[1:6]
-predictors.train <- train[1:6]
-class(predictors.train)
+grid.arrange(ph, ph_log, ncol=2)
 
+# Create log naïve model using top 5 predictors
+m1_log <- lm(log_price ~ carat + (color=="I") + (color=="J") + (color=="K") + (color=="L"), data = train)
+#resid(m1) # list of residuals
+plot(density(resid(m1_log)))
+par(mfrow=c(1,4))
+plot(m1_log)
+par(mfrow=c(1,1))
+AIC(m1_log) # 117.9585 -- can't compare AICs between log and nonlog models 
+vif(m1_log) # same as m1
+
+# Compare residual plots of m1 and m1_log -- the log transformation makes it a little better?
+par(mfrow=c(2,4))
+plot(m1)
+plot(m1_log)
+par(mfrow=c(1,1))
+
+# Log backward variable selection (nvmax = 29 to capture all factor levels)
+model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward") # must list predictors so price isn't included
+summary(model.2.bwd) # the first level of each factorized variable doesn't appear in the output
+# store still products 2  linear dependencies found
+# The top 5 variables change
+
+reg.summary.bwd.2 <- summary(model.2.bwd)
+names(reg.summary.bwd.2)
+reg.summary.bwd.2$rsq
+reg.summary.bwd.2$adjr2
+
+# Why did setting method="backward" cause the best models based on adjr2 and cp to change?
+which.max(reg.summary.bwd.2$adjr2) # 23: adjr2 = 0.8935387 # worse
+which.min(reg.summary.bwd.2$cp) # 19: cp = 15.58155 # better
+which.min(reg.summary.bwd.2$bic) # 16: bic = -576.2245 # worse
+# 19 variables is good compromise based on metrics
+
+# Comparing means of metrics show that log is way better in terms of cp but similar in adjr2 and bic
+mean(reg.summary.bwd$adjr2) # 0.8846959
+mean(reg.summary.bwd$cp) # 110.6188
+mean(reg.summary.bwd$bic) # -582.26
+mean(reg.summary.bwd.2$adjr2) # 0.8750849
+mean(reg.summary.bwd.2$cp) # 58.17066
+mean(reg.summary.bwd.2$bic) # -549.3467
+
+#######################################################
+# Model Build -- Exploration Part 2 (using log_price)
+#######################################################
 
 # Create tree plot
 fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
+
+# Backward Selection (copied from above section)
+model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward") # must list predictors so price isn't included
+summary(model.2.bwd) # the first level of each factorized variable doesn't appear in the output
+
+reg.summary.bwd.2 <- summary(model.2.bwd)
+names(reg.summary.bwd.2)
+reg.summary.bwd.2$rsq
+reg.summary.bwd.2$adjr2
+
+which.max(reg.summary.bwd.2$adjr2) # 23: adjr2 = 0.8935387
+which.min(reg.summary.bwd.2$cp) # 19: cp = 15.58155
+which.min(reg.summary.bwd.2$bic) # 16: bic = -576.2245
+# 19 variables is good compromise based on metrics
+
+# Forward Selection
+model.fwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="forward") # must list predictors so price isn't included
+summary(model.fwd) # the first level of each factorized variable doesn't appear in the output
+
+reg.summary.fwd <- summary(model.fwd)
+names(reg.summary.fwd)
+reg.summary.fwd$rsq
+reg.summary.fwd$adjr2
+
+which.max(reg.summary.fwd$adjr2) # 23: adjr2 = 0.8935387
+which.min(reg.summary.fwd$cp) # 22: cp = 16.79064
+which.min(reg.summary.fwd$bic) # 10: bic = -575.4802
+
+# Stepwise Selection
+model.stepwise <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="seqrep") # must list predictors so price isn't included
+summary(model.stepwise) # the first level of each factorized variable doesn't appear in the output
+
+reg.summary.stepwise <- summary(model.stepwise)
+names(reg.summary.stepwise)
+reg.summary.stepwise$rsq
+reg.summary.stepwise$adjr2
+
+which.max(reg.summary.stepwise$adjr2) # 23: adjr2 = 0.8935387
+which.min(reg.summary.stepwise$cp) # 22: cp = 16.79064
+which.min(reg.summary.stepwise$bic) # 10: bic = -575.4802
+
 
 
 ### Discarded Code ###
@@ -278,3 +382,9 @@ head(trainIndex)
 
 train <- data[ trainIndex,]
 test  <- data[-trainIndex,]
+
+summary(model.lda.bwd)
+
+predictors <- data[1:6]
+predictors.train <- train[1:6]
+class(predictors.train)
