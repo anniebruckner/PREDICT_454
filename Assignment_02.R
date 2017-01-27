@@ -373,6 +373,18 @@ which.max(reg.summary.stepwise$adjr2) # 22: adjr2 = 0.8934076
 which.min(reg.summary.stepwise$cp) # 19: cp = 15.58155
 which.min(reg.summary.stepwise$bic) # 14: bic = -578.4617
 
+# All Subsets Selection
+model.allsub <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 20, method="exhaustive") # returns 26 models
+summary(model.allsub) # the first level of each factorized variable doesn't appear in the output
+
+reg.summary.allsub <- summary(model.allsub)
+names(reg.summary.allsub)
+reg.summary.allsub$rsq
+reg.summary.allsub$adjr2
+
+which.max(reg.summary.allsub$adjr2) # 22: adjr2 = 0.8934076
+which.min(reg.summary.allsub$cp) # 19: cp = 15.58155
+which.min(reg.summary.allsub$bic) # 14: bic = -578.4617
 
 
 ### Discarded Code ###
