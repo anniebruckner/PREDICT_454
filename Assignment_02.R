@@ -387,22 +387,33 @@ which.min(reg.summary.allsub$cp) # 19: cp = 15.58155
 which.min(reg.summary.allsub$bic) # 14: bic = -578.4617
 
 # LASSO Model
-# Set up grod and data matrix for lasso model
+# Set up grid and data matrix for lasso model
 grid <- 10^seq(10, -2, length=100)
-mat.train <- data.matrix(train)
-mat.train <- mat.train[,-7]
-# Remove price to so that the response is not on both sides of equation
+train.matrix <- model.matrix(~ ., data=train, 
+                             contrasts.arg=list(color=contrasts(train$color, contrasts = F),
+                                                clarity=contrasts(train$clarity, contrasts = F), 
+                                                cut=contrasts(train$cut, contrasts = F), 
+                                                channel=contrasts(train$channel, contrasts = F),
+                                                store=contrasts(train$store, contrasts = F)))
+# Code Reference: http://stackoverflow.com/questions/4560459/all-levels-of-a-factor-in-a-model-matrix-in-r
+ncol(train.matrix) # 38
+train.matrix <- train.matrix[,-38] # remove price since log_price is response
+head(train.matrix)
 
-# Use matrices and lambda grid created for ridge regression.
-model.lasso <- glmnet(mat.train, log_price, alpha=1, lambda=grid)
+model.lasso <- glmnet(train.matrix, log_price, alpha=1, lambda=grid)
 
 # Use cross-validation to select lambda.
 set.seed(123)
-cv.out.lasso <- cv.glmnet(mat.train, log_price, alpha=1)
+cv.out.lasso <- cv.glmnet(train.matrix, log_price, alpha=1)
 plot(cv.out.lasso)
 
 bestlamlasso <- cv.out.lasso$lambda.min
-bestlamlasso # 0.002448726
+bestlamlasso # 0.005154334
+
+coef(model.lasso, s=bestlamlasso)
+
+
+
 
 
 ### Discarded Code ###
@@ -418,3 +429,31 @@ summary(model.lda.bwd)
 predictors <- data[1:6]
 predictors.train <- train[1:6]
 class(predictors.train)
+
+train.matrix <- model.matrix(~ ., data=train, 
+                             contrasts.arg=list(color=diag(nlevels(train$color)), 
+                                                clarity=diag(nlevels(train$clarity)),
+                                                cut=diag(nlevels(train$cut)),
+                                                channel=diag(nlevels(train$channel)),
+                                                store=diag(nlevels(train$store))))
+
+varImp(model.lasso, lambda = bestlamlasso)
+
+mat.train <- data.matrix(train)
+mat.train <- mat.train[,-7]
+# Remove price to so that the response is not on both sides of equation
+
+model.lasso <- glmnet(mat.train, log_price, alpha=1, lambda=grid)
+
+# Use cross-validation to select lambda.
+set.seed(123)
+cv.out.lasso <- cv.glmnet(mat.train, log_price, alpha=1)
+plot(cv.out.lasso)
+
+bestlamlasso <- cv.out.lasso$lambda.min
+bestlamlasso # 0.002448726
+
+coef(model.lasso, s=bestlamlasso)
+varImp(model.lasso, lambda = bestlamlasso)
+
+###
