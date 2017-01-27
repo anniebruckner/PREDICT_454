@@ -386,6 +386,24 @@ which.max(reg.summary.allsub$adjr2) # 23: adjr2 = 0.8935387
 which.min(reg.summary.allsub$cp) # 19: cp = 15.58155
 which.min(reg.summary.allsub$bic) # 14: bic = -578.4617
 
+# LASSO Model
+# Set up grod and data matrix for lasso model
+grid <- 10^seq(10, -2, length=100)
+mat.train <- data.matrix(train)
+mat.train <- mat.train[,-7]
+# Remove price to so that the response is not on both sides of equation
+
+# Use matrices and lambda grid created for ridge regression.
+model.lasso <- glmnet(mat.train, log_price, alpha=1, lambda=grid)
+
+# Use cross-validation to select lambda.
+set.seed(123)
+cv.out.lasso <- cv.glmnet(mat.train, log_price, alpha=1)
+plot(cv.out.lasso)
+
+bestlamlasso <- cv.out.lasso$lambda.min
+bestlamlasso # 0.002448726
+
 
 ### Discarded Code ###
 
