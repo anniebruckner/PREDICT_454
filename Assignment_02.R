@@ -361,7 +361,7 @@ which.min(reg.summary.fwd$cp) # 22: cp = 16.79064
 which.min(reg.summary.fwd$bic) # 10: bic = -575.4802
 
 # Stepwise Selection
-model.stepwise <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="seqrep") # must list predictors so price isn't included
+model.stepwise <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 26, method="seqrep") # nvmax > 26 causes R Studio session to crash
 summary(model.stepwise) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.stepwise <- summary(model.stepwise)
@@ -369,9 +369,9 @@ names(reg.summary.stepwise)
 reg.summary.stepwise$rsq
 reg.summary.stepwise$adjr2
 
-which.max(reg.summary.stepwise$adjr2) # 23: adjr2 = 0.8935387
-which.min(reg.summary.stepwise$cp) # 22: cp = 16.79064
-which.min(reg.summary.stepwise$bic) # 10: bic = -575.4802
+which.max(reg.summary.stepwise$adjr2) # 22: adjr2 = 0.8934076
+which.min(reg.summary.stepwise$cp) # 19: cp = 15.58155
+which.min(reg.summary.stepwise$bic) # 14: bic = -578.4617
 
 
 
