@@ -210,15 +210,44 @@ dim(train) # 298   7
 head(test)
 dim(test) # 127   7
 
-# Fit a naïve regression model using backwards variable selection (nvmax = 31 to capture all factor levels)
-model.1.bwd <- regsubsets(price ~ ., data = train, nvmax = 31, method="backward")
-summary(model.1.bwd)
+# Fit model with all predictors to have a baseline
+model.all <- regsubsets(price ~ ., data = train, nvmax = 29)
+reg.summary <- summary(model.all)
+names(reg.summary)
+reg.summary$rsq
+reg.summary$adjr2
+
+which.max(reg.summary$adjr2) # 23: adjr2 = 0.9149147
+which.min(reg.summary$cp) # 23: cp = 17.69444
+which.min(reg.summary$bic) # 18: bic = -629.6917
+
+model.all.lm <- lm(price ~ ., data = train)
+model.all.lm.summary <- summary(model.all.lm)
+names(model.all.lm.summary)
+model.all.lm.summary$adj.r.squared # 0.9135605
+
+vif(model.all.lm) # won't calculate because "there are aliased coefficients in the model"
+alias(model.all.lm)
+# store$University and store$Zales are aliased--maybe good to leave them out, or maybe store entirely
+
+
+# Fit a naïve regression model using backwards variable selection (nvmax = 29 to capture all factor levels)
+model.1.bwd <- regsubsets(price ~ ., data = train, nvmax = 29, method="backward")
+summary(model.1.bwd) # the first level of each factorized variable doesn't appear in the output
 # store produces this warning:
 # In leaps.setup(x, y, wt = wt, nbest = nbest, nvmax = nvmax, force.in = force.in,  :
 # 2  linear dependencies found
-# I found this out by adding in each of the predictors separately.
+# I found this out by adding in each of the predictors separately
 # model.1.bwd <- regsubsets(price ~ carat + color + clarity + cut + channel + store, data = train, nvmax=6, method="backward")
 
+reg.summary <- summary(model.1.bwd)
+reg.summary$rsq
+reg.summary$adjr2
+
+# Why did setting method="backward" cause the best models based on adjr2 and cp to change?
+which.max(reg.summary$adjr2) # 24: adjr2 = 0.9146926
+which.min(reg.summary$cp) # 22: cp = 18.46462
+which.min(reg.summary$bic) # 18: bic = -629.6917
 
 
 m1 <- lm(price ~ carat + color + clarity + cut + channel, data = train)  #Create a linear model
@@ -228,10 +257,8 @@ plot(m1)
 qqnorm(resid(m1)) # A quantile normal plot - good for checking normality
 qqline(resid(m1))
 vif(m1)
-m_all <- lm(price ~ carat + color + clarity + cut + channel + store, data = train)  #Create a linear model
-vif(m_all)
-alias(m_all)
-# store$University and store$Zales are aliased
+
+
 
 summary(model.lda.bwd)
 
