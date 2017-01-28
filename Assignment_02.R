@@ -480,8 +480,73 @@ plot(fit4)
 importance(fit4)
 varImpPlot(fit4, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
+#######################################################
+# Model Comparison
+#######################################################
+
+# fit1 predictions
+fit1.pred <- predict(fit1, newdata = test)
+fit1.pred.exp <- exp(fit1.pred)
+
+MAE <- mean(abs(test$price - fit1.pred.exp))
+MAE # 940.274
+MSE <- mean((test$price - fit1.pred.exp)^2)
+RMSE <- sqrt(MPE)
+RMSE # 1790.202
+
+# https://heuristically.wordpress.com/2013/07/12/calculate-rmse-and-mae-in-r-and-sas/
+# Function that returns Root Mean Squared Error
+rmse <- function(error)
+{
+  sqrt(mean(error^2))
+}
+
+# Function that returns Mean Absolute Error
+mae <- function(error)
+{
+  mean(abs(error))
+}
+
+# Example data
+actual <- test$price
+predicted <- fit1.pred.exp
+
+# Calculate error
+error <- actual - predicted
+
+# Example of invocation of functions
+rmse(error) # 1790.202
+mae(error) # 940.274
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Store RMSE values
+fit1.train.rmse <- getTrainPerf(fit1)
+fit1.test.rmse <- as.numeric(postResample(tms.train.dt.m1.pred, 
+                                       log(tms$price)[tms.test])[1])
+set.seed(1)
+lasso.pred = predict(lasso.mod, s=bestlamlasso, newx=mat.valid)
+
+
+
+
+set.seed(123)
+fit1.pred <- predict(ridge.mod, s=bestlam, newx=mat.valid)
+
+MPE9 <- mean((y.valid - ridge.pred)^2)
+StandardError9 <- sd((y.valid - ridge.pred)^2)/sqrt(n.valid.y)
 
 
 
@@ -529,3 +594,9 @@ coef(model.lasso, s=bestlamlasso)
 varImp(model.lasso, lambda = bestlamlasso)
 
 ###
+
+MPE <- mean((test$price - fit1.pred.exp)^2)
+StandardError <- sd((test$price - fit1.pred.exp)^2)/sqrt(n.test)
+StandardError # 7974789
+
+n.test <- length(test)
