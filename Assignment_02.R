@@ -110,6 +110,9 @@ for (i in 2:6){
 # EDA
 #######################################################
 
+# Create tree plot
+fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
+
 # Create scatter plot for price~carat
 xyplot(price~carat, data = data, col = "steelblue")
 
@@ -330,11 +333,11 @@ mean(reg.summary.bwd.2$bic) # -549.3467
 # Model Build -- Exploration Part 2 (using log_price)
 #######################################################
 
-# Create tree plot
-fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
+# Create tree plot - top number shows log_price
+fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
 
 # Backward Selection (copied from above section)
-model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward") # must list predictors so price isn't included
+model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward")
 summary(model.2.bwd) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.bwd.2 <- summary(model.2.bwd)
@@ -411,6 +414,70 @@ bestlamlasso <- cv.out.lasso$lambda.min
 bestlamlasso # 0.005154334
 
 coef(model.lasso, s=bestlamlasso)
+
+#######################################################
+# Model Build -- Fit Model Suite
+#######################################################
+
+# Although Backward, Stepwise, and All Subset Selection chose the same 19 variable model,
+# I will use the 14 variable model that both Stepwise and All Subset chose since it is simpler.
+# carat + channelMall + clarityI1 + claritySI2 + clarityVVS2 + colorF + colorG + colorH + colorI + colorJ + colorK + colorL + storeAusmans + storeGoodmans
+
+# (1) Create a linear regression model with no interactions using the lm() function
+fit1 <- lm(log_price ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="SI2") + 
+             (clarity=="VVS2") + (color=="F") + (color=="G") + (color=="H") + (color=="I") + 
+             (color=="J") + (color=="K") + (color=="L") + (store=="Ausmans") + (store=="Goodmans"),
+           data = train)
+
+summary(fit1)
+AIC(fit1) # 21.70701
+vif(fit1) # all less than 2
+
+par(mfrow=c(1,4))
+plot(fit1)
+par(mfrow=c(1,1))
+
+# (2) Create a linear regression model including some interaction terms
+
+# Stepwise Selection with Interaction (All Subset Selection has too long of processing time)
+model.allsub.I <- regsubsets(log(price) ~ .*., data = train, method="seqrep") # use all possible interactions
+summary(model.allsub.I) # the first level of each factorized variable doesn't appear in the output
+
+# In order of stepwise variable selection
+# carat
+# clarityI1:storeRiddles
+#colorI:channelInternet
+# carat:colorK
+# carat:colorJ
+# storeGoodmans
+# clarityVS2:channelMall
+# carat:cutNot_Ideal
+
+fit2 <- lm(log_price ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")*(channel=="Internet") + carat*(color=="K") +
+             carat*(color=="J") + (store=="Goodmans") + (clarity=="VS2")*(channel=="Mall") + carat*(cut=="Not_Ideal"),
+           data = train)
+
+summary(fit2)
+AIC(fit2) # 5.50042
+vif(fit2) # range from 1.25 to 14.5
+
+par(mfrow=c(1,4))
+plot(fit2) # Warning: In sqrt(crit * p * (1 - hh)/hh) : NaNs produced
+par(mfrow=c(1,1))
+
+# (3) Create a tree model
+fit3 <- fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
+fit3
+
+# (4) Create a Random Forest model
+
+fit4 <- randomForest(log(price) ~ ., data = train, mtry=6, importance = TRUE)
+importance(fit4)
+varImpPlot(fit4, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+
+
+
 
 
 
