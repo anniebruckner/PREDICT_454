@@ -424,6 +424,7 @@ coef(model.lasso, s=bestlamlasso)
 # carat + channelMall + clarityI1 + claritySI2 + clarityVVS2 + colorF + colorG + colorH + colorI + colorJ + colorK + colorL + storeAusmans + storeGoodmans
 
 # (1) Create a linear regression model with no interactions using the lm() function
+set.seed(123)
 fit1 <- lm(log_price ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="SI2") + 
              (clarity=="VVS2") + (color=="F") + (color=="G") + (color=="H") + (color=="I") + 
              (color=="J") + (color=="K") + (color=="L") + (store=="Ausmans") + (store=="Goodmans"),
@@ -440,6 +441,7 @@ par(mfrow=c(1,1))
 # (2) Create a linear regression model including some interaction terms
 
 # Stepwise Selection with Interaction (All Subset Selection has too long of processing time)
+set.seed(123)
 model.allsub.I <- regsubsets(log(price) ~ .*., data = train, method="seqrep") # use all possible interactions
 summary(model.allsub.I) # the first level of each factorized variable doesn't appear in the output
 
@@ -466,12 +468,15 @@ plot(fit2) # Warning: In sqrt(crit * p * (1 - hh)/hh) : NaNs produced
 par(mfrow=c(1,1))
 
 # (3) Create a tree model
+set.seed(123)
 fit3 <- fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
 fit3
 
 # (4) Create a Random Forest model
-
+set.seed(123)
 fit4 <- randomForest(log(price) ~ ., data = train, mtry=6, importance = TRUE)
+fit4
+plot(fit4)
 importance(fit4)
 varImpPlot(fit4, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
