@@ -479,17 +479,40 @@ fit4_baseline
 # Random Search
 control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
 set.seed(123)
-mtry <- sqrt(ncol(train.matrix))
-rf_random <- train(log(price) ~ ., data=train, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+mtry <- sqrt(ncol(train.matrix)) # 5.567764
+rf_random <- train(train.matrix, log_price, method="rf", metric="RMSE", tuneLength=15, trControl=control)
 print(rf_random)
-plot(rf_random)
+# 298 samples
+# 6 predictor
 
-fit4 <- randomForest(train.matrix, log_price, mtry=31, importance=TRUE)
+# No pre-processing
+# Resampling: Cross-Validated (10 fold, repeated 3 times) 
+# Summary of sample sizes: 267, 267, 268, 267, 268, 269, ... 
+# Resampling results across tuning parameters:
+  
+#   mtry  RMSE       Rsquared 
+# 2    0.5517078  0.6860846
+# 5    0.3583647  0.8508695
+# 10    0.2376679  0.9077693
+# 12    0.2219911  0.9137399
+# 13    0.2164336  0.9161902
+# 14    0.2125060  0.9177249
+# 16    0.2089451  0.9185207
+# 18    0.2074204  0.9183267
+# 20    0.2080204  0.9170165
+# 21    0.2090051  0.9161637
+# 30    0.2192674  0.9078217
+
+# RMSE was used to select the optimal model using  the smallest value.
+# The final value used for the model was mtry = 18.
+plot(rf_random)
+set.seed(123)
+fit4 <- randomForest(train.matrix, log_price, mtry=18, importance=TRUE)
 fit4
 # Number of trees: 500
-# No. of variables tried at each split: 31
-# Mean of squared residuals: 0.05115459
-# % Var explained: 90.25
+# No. of variables tried at each split: 18
+# Mean of squared residuals: 0.04484394
+# % Var explained: 91.46
 
 plot(fit4, main = "Random Forest Plot")
 importance(fit4) # the higher number, the more important for %IncMSE
@@ -635,3 +658,6 @@ train.matrix <- model.matrix(~ ., data=train,
 # Code Reference: http://stackoverflow.com/questions/4560459/all-levels-of-a-factor-in-a-model-matrix-in-r
 train.matrix <- train.matrix[,-1] # remove intercept
 train.matrix <- train.matrix[,-38] # remove price since log_price is response
+
+# rf_random <- train(log(price) ~ ., data=train, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+# print(rf_random)
