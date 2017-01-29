@@ -785,3 +785,10 @@ fit4.test1 <- randomForest(log(test$price) ~ ., data = test.matrix, mtry=18, imp
 fit4.test1.exp <- exp(fit4.test1$y)
 head(fit4.test1.exp)
 head(test$price)
+
+
+set.seed(123)
+fit3a <- tree(log(price) ~ ., data = train)
+fit3a
+summary(fit3)
+summary(fit3a)
