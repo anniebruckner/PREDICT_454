@@ -419,7 +419,7 @@ coef(model.lasso, s=bestlamlasso)
 
 # (1) Create a linear regression model with no interactions using the lm() function
 set.seed(123)
-fit1 <- lm(log_price ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="SI2") + 
+fit1 <- lm(log(price) ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="SI2") + 
              (clarity=="VVS2") + (color=="F") + (color=="G") + (color=="H") + (color=="I") + 
              (color=="J") + (color=="K") + (color=="L") + (store=="Ausmans") + (store=="Goodmans"),
            data = train)
@@ -427,6 +427,9 @@ fit1 <- lm(log_price ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="
 summary(fit1) # Adjusted R-squared:  0.8869
 AIC(fit1) # 21.70701
 vif(fit1) # all less than 2
+fit1.train.exp <- exp(fit1$fitted.values)
+head(fit1.train.exp)
+head(train$price)
 
 par(mfrow=c(1,4))
 plot(fit1)
@@ -449,13 +452,16 @@ summary(model.stepwise.I) # the first level of each factorized variable doesn't 
 # clarityVS2:channelMall
 # carat:cutNot_Ideal
 
-fit2 <- lm(log_price ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")*(channel=="Internet") + carat*(color=="K") +
+fit2 <- lm(log(price) ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")*(channel=="Internet") + carat*(color=="K") +
              carat*(color=="J") + (store=="Goodmans") + (clarity=="VS2")*(channel=="Mall") + carat*(cut=="Not_Ideal"),
            data = train)
 
 summary(fit2) # Adjusted R-squared:  0.8939
 AIC(fit2) # 5.50042
 vif(fit2) # range from 1.25 to 14.5
+fit2.train.exp <- exp(fit2$fitted.values)
+head(fit2.train.exp)
+head(train$price)
 
 par(mfrow=c(1,4))
 plot(fit2) # Warning: In sqrt(crit * p * (1 - hh)/hh) : NaNs produced
@@ -463,8 +469,11 @@ par(mfrow=c(1,1))
 
 # (3) Create a tree model
 set.seed(123)
-fit3 <- rpart(log(price) ~ ., data = train) # must list predictors so price isn't included
+fit3 <- rpart(log(price) ~ ., data = train)
 fit3
+# fit3.train.exp <- exp(fit3$y)
+# head(fit3.train.exp) # same as train$price
+# head(train$price) 
 fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
 fit3_plot
 
@@ -509,12 +518,19 @@ print(rf_random)
 # The final value used for the model was mtry = 18.
 plot(rf_random)
 set.seed(123)
-fit4 <- randomForest(train.matrix, log_price, mtry=18, importance=TRUE)
+fit4 <- randomForest(log(train$price) ~ ., data = train.matrix, mtry=18, importance=TRUE)
 fit4
+
 # Number of trees: 500
 # No. of variables tried at each split: 18
 # Mean of squared residuals: 0.04484394
 # % Var explained: 91.46
+
+# sqrt(0.04484394) # 0.2117639 -- Why doesn't this match the RMSE calculated in rf_random?
+
+names(fit4)
+fit4.train.exp <- exp(fit4$predicted)
+head(fit4.train.exp)
 
 plot(fit4, main = "Random Forest Plot")
 importance(fit4) # the higher number, the more important for %IncMSE
@@ -534,108 +550,149 @@ mae <- function(error){
   mean(abs(error))
 }
 
-# Calculate fit1 predictions
-fit1.pred <- predict(fit1, newdata = test)
-fit1.pred.exp <- exp(fit1.pred) # returns log_price to price for interpretability
+#######
+# fit1
+#######
 
-# Insert fit1 data
+# Calculate fit1 test predictions
+fit1.pred <- predict(fit1, newdata = test)
+fit1.pred.exp <- exp(fit1.pred) # returns log(price) to price for interpretability
+head(fit1.pred.exp)
+
+# Calculate fit1 test errors
 actual <- test$price
 predicted <- fit1.pred.exp
-
-# Calculate error
 error <- actual - predicted
-
-# Calculate fit1 errors
-rmse(error) # 1790.202
+fit1.test.rmse <- rmse(error)
+fit1.test.rmse # 1790.202
 mae(error) # 940.274
 
-# Long way of doing the functions (function check)
-MAE <- mean(abs(test$price - fit1.pred.exp))
-MAE # 940.274
+# Calculate fit1 train errors
+actual <- train$price
+predicted <- fit1.train.exp
+error <- actual - predicted
+fit1.train.rmse <- rmse(error)
+fit1.train.rmse # 2616.139
+mae(error) # 1263.496
+
+# Long way of doing the test prediction functions (function check)
 MSE <- mean((test$price - fit1.pred.exp)^2)
 RMSE <- sqrt(MSE)
 RMSE # 1790.202
+MAE <- mean(abs(test$price - fit1.pred.exp))
+MAE # 940.274
 
-# Calculate fit2 predictions
+# Does predict() values match just changing data = test in lm() for fit1? -- NO -- Why?
+set.seed(123)
+fit1.test <- lm(log(price) ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="SI2") + 
+                  (clarity=="VVS2") + (color=="F") + (color=="G") + (color=="H") + (color=="I") + 
+                  (color=="J") + (color=="K") + (color=="L") + (store=="Ausmans") + (store=="Goodmans"),
+                data = test)
+
+fit1.test.exp <- exp(fit1.test$fitted.values)
+head(fit1.test.exp)
+head(fit1.pred.exp)
+head(test$price)
+
+actual <- test$price
+predicted <- fit1.test.exp
+
+# Calculate test error
+error <- actual - predicted
+
+# Calculate fit1.test errors
+rmse(error) # 2216.292
+mae(error) # 941.8554
+
+#######
+# fit2
+#######
+
+# Calculate fit2 test predictions
 fit2.pred <- predict(fit2, newdata = test)
-fit2.pred.exp <- exp(fit2.pred) # returns log_price to price for interpretability
+fit2.pred.exp <- exp(fit2.pred) # returns log(price) to price for interpretability
 
-# Insert fit2 data
+# Calculate fit2 test errors
 actual <- test$price
 predicted <- fit2.pred.exp
-
-# Calculate error
 error <- actual - predicted
-
-# Calculate fit2 errors
-rmse(error) # 1383.583
+fit2.test.rmse <- rmse(error)
+fit2.test.rmse # 1383.583
 mae(error) # 955.6749
 
-# Calculate fit3 predictions
-fit3.pred <- predict(fit3, newdata = test)
-fit3.pred.exp <- exp(fit3.pred) # returns log_price to price for interpretability
+# Calculate fit2 train errors
+actual <- train$price
+predicted <- fit2.train.exp
+error <- actual - predicted
+fit2.train.rmse <- rmse(error)
+fit2.train.rmse # 2353.941
+mae(error) # 1198.39
 
-# Insert fit3 data
+# Does predict() values match just changing data = test in lm() for fit1? -- NO -- Why?
+fit2.test <- lm(log(price) ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")*(channel=="Internet") + carat*(color=="K") +
+             carat*(color=="J") + (store=="Goodmans") + (clarity=="VS2")*(channel=="Mall") + carat*(cut=="Not_Ideal"),
+           data = test)
+
+fit2.test.exp <- exp(fit2.test$fitted.values)
+head(fit2.test.exp)
+head(fit2.pred.exp)
+head(train$price)
+
 actual <- test$price
-predicted <- fit3.pred.exp
+predicted <- fit2.test.exp
 
-# Calculate error
+# Calculate test error
 error <- actual - predicted
 
-# Calculate fit3 errors
-rmse(error) # 1478.038
+# Calculate fit2.test errors
+rmse(error) # 1268.552
+mae(error) # 837.5475
+
+#######
+# fit3
+#######
+
+# Calculate fit3 test predictions
+fit3.pred <- predict(fit3, newdata = test)
+fit3.pred.exp <- exp(fit3.pred) # returns log(price) to price for interpretability
+
+# Calculate fit3 test errors
+actual <- test$price
+predicted <- fit3.pred.exp
+error <- actual - predicted
+fit3.pred.rmse <- rmse(error)
+fit3.pred.rmse # 1478.038
 mae(error) # 956.3601
 
-# For fit 4, must create test.matrix
-test.matrix  <- model.matrix(log(price) ~ ., data=test)[,-1]
+#######
+# fit4
+#######
+
+# For fit4 test, must create test.matrix
+test.matrix <- model.matrix(log(price) ~ ., data=test)[,-1]
 ncol(test.matrix) # 31 -- first level of each factor is missing
 head(test.matrix)
 
-# Calculate fit4 predictions
+# Calculate fit4 test predictions
 fit4.pred <- predict(fit4, newdata = test.matrix)
 fit4.pred.exp <- exp(fit4.pred) # returns log_price to price for interpretability
+head(fit4.pred.exp)
 
-# Insert fit4 data
+# Calculate fit4 test errors
 actual <- test$price
 predicted <- fit4.pred.exp
-
-# Calculate error
 error <- actual - predicted
-
-# Calculate fit4 errors
-rmse(error) # 1001.25
+fit4.pred.rmse <- rmse(error)
+fit4.pred.rmse # 1001.25
 mae(error) # 634.5892
 
-
-
-
-
-
-
-
-
-
-# Store RMSE values
-fit1.train.rmse <- getTrainPerf(fit1)
-fit1.test.rmse <- as.numeric(postResample(tms.train.dt.m1.pred, 
-                                       log(tms$price)[tms.test])[1])
-set.seed(1)
-lasso.pred = predict(lasso.mod, s=bestlamlasso, newx=mat.valid)
-
-
-
-
-set.seed(123)
-fit1.pred <- predict(ridge.mod, s=bestlam, newx=mat.valid)
-
-MPE9 <- mean((y.valid - ridge.pred)^2)
-StandardError9 <- sd((y.valid - ridge.pred)^2)/sqrt(n.valid.y)
-
-
-
-
-
-
+# Calculate fit4 train errors
+actual <- train$price
+predicted <- fit4.train.exp
+error <- actual - predicted
+fit4.train.rmse <- rmse(error)
+fit4.train.rmse # 1582.471
+mae(error) # 866.4515
 
 
 
@@ -711,3 +768,20 @@ train.matrix <- train.matrix[,-38] # remove price since log_price is response
 
 # rf_random <- train(log(price) ~ ., data=train, method="rf", metric="RMSE", tuneLength=15, trControl=control)
 # print(rf_random)
+
+fit4 <- randomForest(train.matrix, log(train$price), mtry=18, importance=TRUE)
+fit4
+
+
+rf_random <- train(log(price) ~ ., data=train, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+#
+
+
+fit4.test <- randomForest(test.matrix, log(test$price), mtry=18, importance=TRUE)
+fit4.test
+
+set.seed(123)
+fit4.test1 <- randomForest(log(test$price) ~ ., data = test.matrix, mtry=18, importance=TRUE)
+fit4.test1.exp <- exp(fit4.test1$y)
+head(fit4.test1.exp)
+head(test$price)
