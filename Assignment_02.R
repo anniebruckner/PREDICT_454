@@ -87,6 +87,7 @@ summary(data$store)
 levels(data$store) <- c("Ashford", "Ausmans", "Blue_Nile", "Chalmers", 
                       "Danford", "Fred_Meyer", "Goodmans", "Kay", 
                       "R_Holland", "Riddles", "University", "Zales")
+str(data)
 
 # Create histograms for all predictor variables
 for (i in 1:6){
@@ -106,11 +107,43 @@ for (i in 2:6){
   print(p)
 }
 
+clarityb <- bwplot(price~clarity, data = data,
+             par.settings = list(
+               box.umbrella=list(col= "black"), 
+               box.dot=list(col= "black"), 
+               box.rectangle = list(col= "black", fill = "steelblue")),
+             strip = strip.custom(bg="lightgrey"),
+             xlab = "clarity")
+clarityb
+
+cutb <- bwplot(price~cut, data = data,
+                   par.settings = list(
+                     box.umbrella=list(col= "black"), 
+                     box.dot=list(col= "black"), 
+                     box.rectangle = list(col= "black", fill = "steelblue")),
+                   strip = strip.custom(bg="lightgrey"),
+               xlab = "cut")
+cutb
+
+channelb <- bwplot(price~channel, data = data,
+                   par.settings = list(
+                     box.umbrella=list(col= "black"), 
+                     box.dot=list(col= "black"), 
+                     box.rectangle = list(col= "black", fill = "steelblue")),
+                   strip = strip.custom(bg="lightgrey"),
+                   xlab = "channel")
+channelb
+
+grid.arrange(clarityb, cutb, channelb, ncol=3)
+
 #######################################################
 # EDA
 #######################################################
 
-# Create tree plot
+# Disable scientific notation for labeling plots
+# options(scipen = 10)
+
+# Create tree plot -- How to plot without scientific notation?
 fancyRpartPlot(rpart(price ~ ., data = data), sub = "")
 
 # Create scatter plot for price~carat
@@ -145,13 +178,15 @@ grid.arrange(ch, cb, cq, ncol=3)
 ## NEED TO MAKE FUNCTION THAT PLOTS BOTH TYPES OF PLOT
 myPlots <- function(variable){
 h1 <- histogram(~price | variable, data = data,
-          col = "steelblue", strip = strip.custom(bg="lightgrey"))
+          col = "steelblue", strip = strip.custom(bg="lightgrey"),
+          main = variable)
 b1 <- bwplot(~price | variable, data = data,
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
          box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
+       strip = strip.custom(bg="lightgrey"),
+       main = variable)
 
 grid.arrange(h1, b1, ncol=2)
 }
@@ -476,6 +511,21 @@ fit3
 # head(train$price) 
 fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
 fit3_plot
+
+### DELETE?
+# ("IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2")
+set.seed(123)
+fit3sub <- rpart(log(price) ~ carat + (clarity=="VVS1") + (clarity=="VVS2") + (clarity=="VS2") + (clarity=="SI1") + (clarity=="SI2") + (clarity=="I1") + (clarity=="I2"), data = train)
+fit3sub
+fit3sub <- rpart(log(price) ~ carat, data = train)
+fit3sub
+
+fit3.train.exp <- exp(fit3sub$y)
+head(fit3.train.exp) # same as train$price
+head(train$price) 
+fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
+fit3_plot
+###
 
 # (4) Create a Random Forest model
 set.seed(123)
