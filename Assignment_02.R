@@ -453,18 +453,66 @@ train.matrix  <- model.matrix(log(price) ~ ., data=train)[,-1]
 ncol(train.matrix) # 31 -- first level of each factor is missing
 head(train.matrix)
 
-model.lasso <- glmnet(train.matrix, log(price), alpha=1, lambda=grid)
+log_price <- log(train$price)
+set.seed(123)
+model.lasso <- glmnet(train.matrix, log_price, alpha=1, lambda=grid) # need to use log_price instead of log(train$price) for this function
 
 # Use cross-validation to select lambda.
 set.seed(123)
 cv.out.lasso <- cv.glmnet(train.matrix, log_price, alpha=1)
-plot(cv.out.lasso) # 12 predictors ideal
+plot(cv.out.lasso) # 12 predictors ideal?
 
 bestlamlasso <- cv.out.lasso$lambda.min
 bestlamlasso # 0.000288169
 
 coef(model.lasso, s=bestlamlasso)
 #varImp(model.lasso, lambda = bestlamlasso)
+
+# Calculate lasso train predictions
+set.seed(123)
+lasso.train <- predict(model.lasso, newx = train.matrix, s = bestlamlasso)
+lasso.train.exp <- exp(lasso.train) # returns log(price) to price for interpretability
+head(lasso.train.exp)
+
+# Calculate lasso train errors
+actual <- train$price
+predicted <- lasso.train.exp
+error <- actual - predicted
+lasso.train.rmse <- rmse(error)
+lasso.train.rmse # 2416.057
+mae(error) # 1227.299
+
+# Create best 21-variable stepwise model to compare to lasso model
+set.seed(123)
+m_stepwise21 <- lm(log(price) ~ carat + (channel=="Internet") + (channel=="Mall") +
+                     (clarity=="I2") + (clarity=="SI1") + (clarity=="SI2") + (clarity=="VS1") +
+                     (clarity=="VS2") +  (clarity=="VVS1") + (clarity=="VVS2") + 
+                     (color=="E") + (color=="F") + (color=="G") + (color=="H") +
+                     (color=="I") + (color=="J") + (color=="K") + (color=="L") +
+                     (cut=="Not_Ideal") + (store=="Ausmans") , data = train)
+
+coef(m_stepwise21)
+#resid(m1) # list of residuals
+plot(density(resid(m_stepwise21)))
+par(mfrow=c(1,4))
+plot(m_stepwise21)
+par(mfrow=c(1,1))
+AIC(m_stepwise21) # 87.73165
+vif(m_stepwise21) # all under 5
+
+# Calculate stepwise21 train predictions
+set.seed(123)
+stepwise21.train <- predict(m_stepwise21, newdata = train)
+stepwise21.train.exp <- exp(stepwise21.train) # returns log(price) to price for interpretability
+head(stepwise21.train.exp)
+
+# Calculate stepwise21 train errors
+actual <- train$price
+predicted <- stepwise21.train.exp
+error <- actual - predicted
+stepwise21.train.rmse <- rmse(error)
+stepwise21.train.rmse # 2515.701
+mae(error) # 1272.205
 
 #######################################################
 # Model Build -- Fit Model Suite
@@ -509,6 +557,7 @@ summary(model.stepwise.I) # the first level of each factorized variable doesn't 
 # clarityVS2:channelMall
 # carat:cutNot_Ideal
 
+set.seed(123)
 fit2 <- lm(log(price) ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")*(channel=="Internet") + carat*(color=="K") +
              carat*(color=="J") + (store=="Goodmans") + (clarity=="VS2")*(channel=="Mall") + carat*(cut=="Not_Ideal"),
            data = train)
