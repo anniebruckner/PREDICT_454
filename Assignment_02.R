@@ -290,7 +290,9 @@ which.min(reg.summary.bwd$bic) # 18: bic = -629.6917
 
 # Create naïve model using top 5 predictors
 m1 <- lm(price ~ carat + (color=="I") + (color=="J") + (color=="K") + (color=="L"), data = train)
+# + (channel=="Mall") + (store=="Goodmans") + (clarity=="SI2") + (color=="H") + (clarity=="SI1")
 #resid(m1) # list of residuals
+par(mfrow=c(1,1))
 plot(density(resid(m1)))
 par(mfrow=c(1,4))
 plot(m1)
@@ -318,13 +320,14 @@ hist(log_price)
 # Plot price and log_price
 ph <- histogram(~price, data = train,
                 col = "steelblue", strip = strip.custom(bg="lightgrey"))
-ph_log <- histogram(~log_price, data = train,
+ph_log <- histogram(~log(price), data = train,
                 col = "steelblue", strip = strip.custom(bg="lightgrey"))
 
 grid.arrange(ph, ph_log, ncol=2)
 
 # Create log naïve model using top 5 predictors
-m1_log <- lm(log_price ~ carat + (color=="I") + (color=="J") + (color=="K") + (color=="L"), data = train)
+m1_log <- lm(log(price) ~ carat + (color=="I") + (color=="J") + (color=="K") + (color=="L"), data = train)
+# + (channel=="Mall") + (store=="Goodmans") + (clarity=="SI2") + (color=="H") + (clarity=="SI1")
 #resid(m1) # list of residuals
 plot(density(resid(m1_log)))
 par(mfrow=c(1,4))
@@ -340,7 +343,7 @@ plot(m1_log)
 par(mfrow=c(1,1))
 
 # Log backward variable selection (nvmax = 29 to capture all factor levels)
-model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward") # must list predictors so price isn't included
+model.2.bwd <- regsubsets(log(price) ~ ., data = train, nvmax = 29, method="backward") # must list predictors so price isn't included
 summary(model.2.bwd) # the first level of each factorized variable doesn't appear in the output
 # store still products 2  linear dependencies found
 # The top 5 variables change
@@ -351,9 +354,12 @@ reg.summary.bwd.2$rsq
 reg.summary.bwd.2$adjr2
 
 # Why did setting method="backward" cause the best models based on adjr2 and cp to change?
-which.max(reg.summary.bwd.2$adjr2) # 23: adjr2 = 0.8935387 # worse
-which.min(reg.summary.bwd.2$cp) # 19: cp = 15.58155 # better
-which.min(reg.summary.bwd.2$bic) # 16: bic = -576.2245 # worse
+which.max(reg.summary.bwd.2$adjr2) # 23
+which.min(reg.summary.bwd.2$cp) # 19 
+which.min(reg.summary.bwd.2$bic) # 16 
+reg.summary.bwd.2$adjr2[23] # 0.8935387 # worse
+reg.summary.bwd.2$cp[19] # 15.58155 # better
+reg.summary.bwd.2$bic[16] # -576.2245 # worse
 # 19 variables is good compromise based on metrics
 
 # Comparing means of metrics show that log is way better in terms of cp but similar in adjr2 and bic
@@ -365,14 +371,15 @@ mean(reg.summary.bwd.2$cp) # 58.17066
 mean(reg.summary.bwd.2$bic) # -549.3467
 
 #######################################################
-# Model Build -- Exploration Part 2 (using log_price)
+# Model Build -- Exploration Part 2 Using log(price)
 #######################################################
 
-# Create tree plot - top number shows log_price
-fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
+# Create tree plot - top number in each leaf shows log(price)
+fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
 
 # Backward Selection (copied from above section)
-model.2.bwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="backward")
+set.seed(123)
+model.2.bwd <- regsubsets(log(price) ~ ., data = train, nvmax = 29, method="backward")
 summary(model.2.bwd) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.bwd.2 <- summary(model.2.bwd)
@@ -380,13 +387,16 @@ names(reg.summary.bwd.2)
 reg.summary.bwd.2$rsq
 reg.summary.bwd.2$adjr2
 
-which.max(reg.summary.bwd.2$adjr2) # 23: adjr2 = 0.8935387
-which.min(reg.summary.bwd.2$cp) # 19: cp = 15.58155
-which.min(reg.summary.bwd.2$bic) # 16: bic = -576.2245
-# 19 variables is good compromise based on metrics
+which.max(reg.summary.bwd.2$adjr2) # 23
+which.min(reg.summary.bwd.2$cp) # 19 
+which.min(reg.summary.bwd.2$bic) # 16 
+reg.summary.bwd.2$adjr2[23] # 0.8935387 # worse
+reg.summary.bwd.2$cp[19] # 15.58155 # better
+reg.summary.bwd.2$bic[16] # -576.2245 # worse
 
 # Forward Selection
-model.fwd <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="forward") # must list predictors so price isn't included
+set.seed(123)
+model.fwd <- regsubsets(log(price) ~ ., data = train, nvmax = 29, method="forward") # must list predictors so price isn't included
 summary(model.fwd) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.fwd <- summary(model.fwd)
@@ -394,12 +404,16 @@ names(reg.summary.fwd)
 reg.summary.fwd$rsq
 reg.summary.fwd$adjr2
 
-which.max(reg.summary.fwd$adjr2) # 23: adjr2 = 0.8935387
-which.min(reg.summary.fwd$cp) # 22: cp = 16.79064
-which.min(reg.summary.fwd$bic) # 10: bic = -575.4802
+which.max(reg.summary.fwd$adjr2) # 23
+which.min(reg.summary.fwd$cp) # 22 
+which.min(reg.summary.fwd$bic) # 10 
+reg.summary.fwd$adjr2[23] # 0.8935387
+reg.summary.fwd$cp[22] # 16.79064
+reg.summary.fwd$bic[10] # -575.4802
 
 # Stepwise Selection
-model.stepwise <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 26, method="seqrep") # nvmax > 26 causes R Studio session to crash
+set.seed(123)
+model.stepwise <- regsubsets(log(price) ~ ., data = train, nvmax = 26, method="seqrep") # nvmax > 26 causes R Studio session to crash
 summary(model.stepwise) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.stepwise <- summary(model.stepwise)
@@ -407,12 +421,16 @@ names(reg.summary.stepwise)
 reg.summary.stepwise$rsq
 reg.summary.stepwise$adjr2
 
-which.max(reg.summary.stepwise$adjr2) # 22: adjr2 = 0.8934076
-which.min(reg.summary.stepwise$cp) # 19: cp = 15.58155
-which.min(reg.summary.stepwise$bic) # 14: bic = -578.4617
+which.max(reg.summary.stepwise$adjr2) # 22 
+which.min(reg.summary.stepwise$cp) # 19 
+which.min(reg.summary.stepwise$bic) # 14
+reg.summary.stepwise$adjr2[22] # 0.8934076
+reg.summary.stepwise$cp[19] # 15.58155
+reg.summary.stepwise$bic[14] # -578.4617
 
 # All Subsets Selection
-model.allsub <- regsubsets(log_price ~ carat + color + clarity + cut + channel + store, data = train, nvmax = 29, method="exhaustive")
+set.seed(123)
+model.allsub <- regsubsets(log(price) ~ ., data = train, nvmax = 29, method="exhaustive")
 summary(model.allsub) # the first level of each factorized variable doesn't appear in the output
 
 reg.summary.allsub <- summary(model.allsub)
@@ -420,18 +438,22 @@ names(reg.summary.allsub)
 reg.summary.allsub$rsq
 reg.summary.allsub$adjr2
 
-which.max(reg.summary.allsub$adjr2) # 23: adjr2 = 0.8935387
-which.min(reg.summary.allsub$cp) # 19: cp = 15.58155
-which.min(reg.summary.allsub$bic) # 14: bic = -578.4617
+which.max(reg.summary.allsub$adjr2) # 23
+which.min(reg.summary.allsub$cp) # 19
+which.min(reg.summary.allsub$bic) # 14
+reg.summary.allsub$adjr2[23] # 0.8935387
+reg.summary.allsub$cp[19] # 15.58155
+reg.summary.allsub$bic[14] # -578.4617
 
 # LASSO Model
 # Set up grid and data matrix for lasso model
 grid <- 10^seq(10, -2, length=100)
+set.seed(123)
 train.matrix  <- model.matrix(log(price) ~ ., data=train)[,-1]
 ncol(train.matrix) # 31 -- first level of each factor is missing
 head(train.matrix)
 
-model.lasso <- glmnet(train.matrix, log_price, alpha=1, lambda=grid)
+model.lasso <- glmnet(train.matrix, log(price), alpha=1, lambda=grid)
 
 # Use cross-validation to select lambda.
 set.seed(123)
@@ -605,6 +627,7 @@ mae <- function(error){
 #######
 
 # Calculate fit1 test predictions
+set.seed(123)
 fit1.pred <- predict(fit1, newdata = test)
 fit1.pred.exp <- exp(fit1.pred) # returns log(price) to price for interpretability
 head(fit1.pred.exp)
@@ -616,6 +639,12 @@ error <- actual - predicted
 fit1.test.rmse <- rmse(error)
 fit1.test.rmse # 1790.202
 mae(error) # 940.274
+
+# Calculate fit1 train predictions
+set.seed(123)
+fit1.train <- predict(fit1, newdata = train)
+fit1.train.exp <- exp(fit1.train) # returns log(price) to price for interpretability
+head(fit1.train.exp)
 
 # Calculate fit1 train errors
 actual <- train$price
@@ -659,6 +688,7 @@ mae(error) # 941.8554
 #######
 
 # Calculate fit2 test predictions
+set.seed(123)
 fit2.pred <- predict(fit2, newdata = test)
 fit2.pred.exp <- exp(fit2.pred) # returns log(price) to price for interpretability
 
@@ -669,6 +699,12 @@ error <- actual - predicted
 fit2.test.rmse <- rmse(error)
 fit2.test.rmse # 1383.583
 mae(error) # 955.6749
+
+# Calculate fit1 train predictions
+set.seed(123)
+fit2.train <- predict(fit2, newdata = train)
+fit2.train.exp <- exp(fit2.train) # returns log(price) to price for interpretability
+head(fit2.train.exp)
 
 # Calculate fit2 train errors
 actual <- train$price
@@ -703,6 +739,7 @@ mae(error) # 837.5475
 #######
 
 # Calculate fit3 test predictions
+set.seed(123)
 fit3.pred <- predict(fit3, newdata = test)
 fit3.pred.exp <- exp(fit3.pred) # returns log(price) to price for interpretability
 
@@ -714,16 +751,32 @@ fit3.pred.rmse <- rmse(error)
 fit3.pred.rmse # 1478.038
 mae(error) # 956.3601
 
+# Calculate fit3 train predictions
+set.seed(123)
+fit3.train <- predict(fit3, newdata = train)
+fit3.train.exp <- exp(fit3.train) # returns log(price) to price for interpretability
+head(fit3.train.exp)
+
+# Calculate fit3 train errors
+actual <- train$price
+predicted <- fit3.train.exp
+error <- actual - predicted
+fit3.train.rmse <- rmse(error)
+fit3.train.rmse # 1859.317
+mae(error) # 1150.792
+
 #######
 # fit4
 #######
 
 # For fit4 test, must create test.matrix
+set.seed(123)
 test.matrix <- model.matrix(log(price) ~ ., data=test)[,-1]
 ncol(test.matrix) # 31 -- first level of each factor is missing
 head(test.matrix)
 
 # Calculate fit4 test predictions
+set.seed(123)
 fit4.pred <- predict(fit4, newdata = test.matrix)
 fit4.pred.exp <- exp(fit4.pred) # returns log_price to price for interpretability
 head(fit4.pred.exp)
@@ -735,6 +788,12 @@ error <- actual - predicted
 fit4.pred.rmse <- rmse(error)
 fit4.pred.rmse # 1001.25
 mae(error) # 634.5892
+
+# Calculate fit4 train predictions
+set.seed(123)
+fit4.train <- predict(fit4, newdata = train.matrix)
+fit4.train.exp <- exp(fit4.train) # returns log(price) to price for interpretability
+head(fit4.train.exp)
 
 # Calculate fit4 train errors
 actual <- train$price
@@ -842,3 +901,11 @@ fit3a <- tree(log(price) ~ ., data = train)
 fit3a
 summary(fit3)
 summary(fit3a)
+
+# Create PCA model
+model.pca <- prcomp(log(price) ~ ., data = data, scale = T) # prcomp is preferred to princomp for accuracy
+summary(model.pca)
+par(mfrow=c(1,2))
+screeplot(model.pca, type = c("lines"), main = "PCA Model", sub = "Number of Components") # 4 components explain most of variability in the data
+biplot(model.pca, xlabs = wine[, "Class"], xlim=c(-0.20, 0.20))
+
