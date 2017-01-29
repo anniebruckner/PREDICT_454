@@ -522,39 +522,88 @@ varImpPlot(fit4, main = "Random Forest Model: \n Variable Importance") # How to 
 # Model Comparison
 #######################################################
 
-# fit1 predictions
-fit1.pred <- predict(fit1, newdata = test)
-fit1.pred.exp <- exp(fit1.pred)
-
-MAE <- mean(abs(test$price - fit1.pred.exp))
-MAE # 940.274
-MSE <- mean((test$price - fit1.pred.exp)^2)
-RMSE <- sqrt(MSE)
-RMSE # 1790.202
-
+# Prediction Functions
 # https://heuristically.wordpress.com/2013/07/12/calculate-rmse-and-mae-in-r-and-sas/
-# Function that returns Root Mean Squared Error
-rmse <- function(error)
-{
+rmse <- function(error){
   sqrt(mean(error^2))
 }
 
-# Function that returns Mean Absolute Error
-mae <- function(error)
-{
+mae <- function(error){
   mean(abs(error))
 }
 
-# Example data
+# Calculate fit1 predictions
+fit1.pred <- predict(fit1, newdata = test)
+fit1.pred.exp <- exp(fit1.pred) # returns log_price to price for interpretability
+
+# Insert fit1 data
 actual <- test$price
 predicted <- fit1.pred.exp
 
 # Calculate error
 error <- actual - predicted
 
-# Example of invocation of functions
+# Calculate fit1 errors
 rmse(error) # 1790.202
 mae(error) # 940.274
+
+# Long way of doing the functions (function check)
+MAE <- mean(abs(test$price - fit1.pred.exp))
+MAE # 940.274
+MSE <- mean((test$price - fit1.pred.exp)^2)
+RMSE <- sqrt(MSE)
+RMSE # 1790.202
+
+# Calculate fit2 predictions
+fit2.pred <- predict(fit2, newdata = test)
+fit2.pred.exp <- exp(fit2.pred) # returns log_price to price for interpretability
+
+# Insert fit2 data
+actual <- test$price
+predicted <- fit2.pred.exp
+
+# Calculate error
+error <- actual - predicted
+
+# Calculate fit2 errors
+rmse(error) # 1383.583
+mae(error) # 955.6749
+
+# Calculate fit3 predictions
+# For fit3 and fit 4, must create test.matrix
+
+test.matrix  <- model.matrix(log(price) ~ ., data=test)[,-1]
+ncol(test.matrix) # 31 -- first level of each factor is missing
+head(test.matrix)
+
+fit3.pred <- predict(fit3, newdata = test.matrix)
+fit3.pred.exp <- exp(fit3.pred) # returns log_price to price for interpretability
+
+# Insert fit3 data
+actual <- test$price
+predicted <- fit3.pred.exp
+
+# Calculate error
+error <- actual - predicted
+
+# Calculate fit3 errors
+rmse(error) # 1383.583
+mae(error) # 955.6749
+
+# Calculate fit4 predictions
+fit4.pred <- predict(fit4, newdata = test.matrix)
+fit4.pred.exp <- exp(fit4.pred) # returns log_price to price for interpretability
+
+# Insert fit4 data
+actual <- test$price
+predicted <- fit4.pred.exp
+
+# Calculate error
+error <- actual - predicted
+
+# Calculate fit4 errors
+rmse(error) # 1001.25
+mae(error) # 634.5892
 
 
 
