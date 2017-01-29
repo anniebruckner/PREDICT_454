@@ -392,15 +392,8 @@ which.min(reg.summary.allsub$bic) # 14: bic = -578.4617
 # LASSO Model
 # Set up grid and data matrix for lasso model
 grid <- 10^seq(10, -2, length=100)
-train.matrix <- model.matrix(~ ., data=train, 
-                             contrasts.arg=list(color=contrasts(train$color, contrasts = F),
-                                                clarity=contrasts(train$clarity, contrasts = F), 
-                                                cut=contrasts(train$cut, contrasts = F), 
-                                                channel=contrasts(train$channel, contrasts = F),
-                                                store=contrasts(train$store, contrasts = F)))
-# Code Reference: http://stackoverflow.com/questions/4560459/all-levels-of-a-factor-in-a-model-matrix-in-r
-ncol(train.matrix) # 38
-train.matrix <- train.matrix[,-38] # remove price since log_price is response
+train.matrix  <- model.matrix(log(price) ~ ., data=train)[,-1]
+ncol(train.matrix) # 31 -- first level of each factor is missing
 head(train.matrix)
 
 model.lasso <- glmnet(train.matrix, log_price, alpha=1, lambda=grid)
@@ -408,12 +401,13 @@ model.lasso <- glmnet(train.matrix, log_price, alpha=1, lambda=grid)
 # Use cross-validation to select lambda.
 set.seed(123)
 cv.out.lasso <- cv.glmnet(train.matrix, log_price, alpha=1)
-plot(cv.out.lasso)
+plot(cv.out.lasso) # 12 predictors ideal
 
 bestlamlasso <- cv.out.lasso$lambda.min
-bestlamlasso # 0.005154334
+bestlamlasso # 0.000288169
 
 coef(model.lasso, s=bestlamlasso)
+#varImp(model.lasso, lambda = bestlamlasso)
 
 #######################################################
 # Model Build -- Fit Model Suite
@@ -430,7 +424,7 @@ fit1 <- lm(log_price ~ carat + (channel=="Mall") + (clarity=="I1") + (clarity=="
              (color=="J") + (color=="K") + (color=="L") + (store=="Ausmans") + (store=="Goodmans"),
            data = train)
 
-summary(fit1)
+summary(fit1) # Adjusted R-squared:  0.8869
 AIC(fit1) # 21.70701
 vif(fit1) # all less than 2
 
@@ -442,13 +436,13 @@ par(mfrow=c(1,1))
 
 # Stepwise Selection with Interaction (All Subset Selection has too long of processing time)
 set.seed(123)
-model.allsub.I <- regsubsets(log(price) ~ .*., data = train, method="seqrep") # use all possible interactions
-summary(model.allsub.I) # the first level of each factorized variable doesn't appear in the output
+model.stepwise.I <- regsubsets(log(price) ~ .*., data = train, method="seqrep") # use all possible interactions
+summary(model.stepwise.I) # the first level of each factorized variable doesn't appear in the output
 
 # In order of stepwise variable selection
 # carat
 # clarityI1:storeRiddles
-#colorI:channelInternet
+# colorI:channelInternet
 # carat:colorK
 # carat:colorJ
 # storeGoodmans
@@ -459,7 +453,7 @@ fit2 <- lm(log_price ~ carat + (clarity=="I1")*(store=="Riddles") + (color=="I")
              carat*(color=="J") + (store=="Goodmans") + (clarity=="VS2")*(channel=="Mall") + carat*(cut=="Not_Ideal"),
            data = train)
 
-summary(fit2)
+summary(fit2) # Adjusted R-squared:  0.8939
 AIC(fit2) # 5.50042
 vif(fit2) # range from 1.25 to 14.5
 
@@ -469,15 +463,36 @@ par(mfrow=c(1,1))
 
 # (3) Create a tree model
 set.seed(123)
-fit3 <- fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
+fit3 <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
 fit3
 
 # (4) Create a Random Forest model
 set.seed(123)
-fit4 <- randomForest(log(price) ~ ., data = train, mtry=6, importance = TRUE)
+# mtry can be 31 at most because of number of columns in train.matrix
+fit4_baseline <- randomForest(train.matrix, log_price, mtry=floor(sqrt(ncol(train.matrix))), importance=TRUE)
+fit4_baseline
+# Number of trees: 500
+# No. of variables tried at each split: 5
+# Mean of squared residuals: 0.1239849
+# % Var explained: 76.38
+
+# Random Search
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+set.seed(123)
+mtry <- sqrt(ncol(train.matrix))
+rf_random <- train(log(price) ~ ., data=train, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+print(rf_random)
+plot(rf_random)
+
+fit4 <- randomForest(train.matrix, log_price, mtry=31, importance=TRUE)
 fit4
-plot(fit4)
-importance(fit4)
+# Number of trees: 500
+# No. of variables tried at each split: 31
+# Mean of squared residuals: 0.05115459
+# % Var explained: 90.25
+
+plot(fit4, main = "Random Forest Plot")
+importance(fit4) # the higher number, the more important for %IncMSE
 varImpPlot(fit4, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
 #######################################################
@@ -491,7 +506,7 @@ fit1.pred.exp <- exp(fit1.pred)
 MAE <- mean(abs(test$price - fit1.pred.exp))
 MAE # 940.274
 MSE <- mean((test$price - fit1.pred.exp)^2)
-RMSE <- sqrt(MPE)
+RMSE <- sqrt(MSE)
 RMSE # 1790.202
 
 # https://heuristically.wordpress.com/2013/07/12/calculate-rmse-and-mae-in-r-and-sas/
@@ -527,11 +542,6 @@ mae(error) # 940.274
 
 
 
-
-
-
-
-
 # Store RMSE values
 fit1.train.rmse <- getTrainPerf(fit1)
 fit1.test.rmse <- as.numeric(postResample(tms.train.dt.m1.pred, 
@@ -547,6 +557,14 @@ fit1.pred <- predict(ridge.mod, s=bestlam, newx=mat.valid)
 
 MPE9 <- mean((y.valid - ridge.pred)^2)
 StandardError9 <- sd((y.valid - ridge.pred)^2)/sqrt(n.valid.y)
+
+
+
+
+
+
+
+
 
 
 
@@ -600,3 +618,20 @@ StandardError <- sd((test$price - fit1.pred.exp)^2)/sqrt(n.test)
 StandardError # 7974789
 
 n.test <- length(test)
+
+#fit4 <- randomForest(log(price) ~ ., data = train, mtry=6, importance = TRUE)
+#fit4 <- randomForest(log(price) ~ ., data = train, mtry=6, importance = TRUE)
+
+fit3 <- fancyRpartPlot(rpart(log_price ~ carat + color + clarity + cut + channel + store, data = train), sub = "") # must list predictors so price isn't included
+fit3
+
+Y <- log_price
+train.matrix <- model.matrix(~ ., data=train, 
+                             contrasts.arg=list(color=contrasts(train$color, contrasts = F),
+                                                clarity=contrasts(train$clarity, contrasts = F), 
+                                                cut=contrasts(train$cut, contrasts = F), 
+                                                channel=contrasts(train$channel, contrasts = F),
+                                                store=contrasts(train$store, contrasts = F)))
+# Code Reference: http://stackoverflow.com/questions/4560459/all-levels-of-a-factor-in-a-model-matrix-in-r
+train.matrix <- train.matrix[,-1] # remove intercept
+train.matrix <- train.matrix[,-38] # remove price since log_price is response
