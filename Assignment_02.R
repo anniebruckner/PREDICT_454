@@ -463,8 +463,10 @@ par(mfrow=c(1,1))
 
 # (3) Create a tree model
 set.seed(123)
-fit3 <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
+fit3 <- rpart(log(price) ~ ., data = train) # must list predictors so price isn't included
 fit3
+fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
+fit3_plot
 
 # (4) Create a Random Forest model
 set.seed(123)
@@ -570,13 +572,7 @@ rmse(error) # 1383.583
 mae(error) # 955.6749
 
 # Calculate fit3 predictions
-# For fit3 and fit 4, must create test.matrix
-
-test.matrix  <- model.matrix(log(price) ~ ., data=test)[,-1]
-ncol(test.matrix) # 31 -- first level of each factor is missing
-head(test.matrix)
-
-fit3.pred <- predict(fit3, newdata = test.matrix)
+fit3.pred <- predict(fit3, newdata = test)
 fit3.pred.exp <- exp(fit3.pred) # returns log_price to price for interpretability
 
 # Insert fit3 data
@@ -587,8 +583,13 @@ predicted <- fit3.pred.exp
 error <- actual - predicted
 
 # Calculate fit3 errors
-rmse(error) # 1383.583
-mae(error) # 955.6749
+rmse(error) # 1478.038
+mae(error) # 956.3601
+
+# For fit 4, must create test.matrix
+test.matrix  <- model.matrix(log(price) ~ ., data=test)[,-1]
+ncol(test.matrix) # 31 -- first level of each factor is missing
+head(test.matrix)
 
 # Calculate fit4 predictions
 fit4.pred <- predict(fit4, newdata = test.matrix)
