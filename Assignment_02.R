@@ -836,8 +836,8 @@ actual <- train$price
 predicted <- fit4.train.exp
 error <- actual - predicted
 fit4.train.rmse <- rmse(error)
-fit4.train.rmse # 1582.471
-mae(error) # 866.4515
+fit4.train.rmse # 830.3552
+mae(error) # 431.6164
 
 
 
