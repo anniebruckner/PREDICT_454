@@ -745,7 +745,7 @@ fit2.test.rmse <- rmse(error)
 fit2.test.rmse # 1383.583
 mae(error) # 955.6749
 
-# Calculate fit1 train predictions
+# Calculate fit2 train predictions
 set.seed(123)
 fit2.train <- predict(fit2, newdata = train)
 fit2.train.exp <- exp(fit2.train) # returns log(price) to price for interpretability
