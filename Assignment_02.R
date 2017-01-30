@@ -136,6 +136,15 @@ channelb
 
 grid.arrange(clarityb, cutb, channelb, ncol=3)
 
+colorb <- bwplot(price~color, data = data,
+                   par.settings = list(
+                     box.umbrella=list(col= "black"), 
+                     box.dot=list(col= "black"), 
+                     box.rectangle = list(col= "black", fill = "steelblue")),
+                   strip = strip.custom(bg="lightgrey"),
+                   xlab = "color")
+colorb
+
 #######################################################
 # EDA
 #######################################################
