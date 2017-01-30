@@ -583,21 +583,6 @@ fit3
 fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
 fit3_plot
 
-### DELETE?
-# ("IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2")
-set.seed(123)
-fit3sub <- rpart(log(price) ~ carat + (clarity=="VVS1") + (clarity=="VVS2") + (clarity=="VS2") + (clarity=="SI1") + (clarity=="SI2") + (clarity=="I1") + (clarity=="I2"), data = train)
-fit3sub
-fit3sub <- rpart(log(price) ~ carat, data = train)
-fit3sub
-
-fit3.train.exp <- exp(fit3sub$y)
-head(fit3.train.exp) # same as train$price
-head(train$price) 
-fit3_plot <- fancyRpartPlot(rpart(log(price) ~ ., data = train), sub = "") # must list predictors so price isn't included
-fit3_plot
-###
-
 # (4) Create a Random Forest model
 set.seed(123)
 # mtry can be 31 at most because of number of columns in train.matrix
@@ -608,6 +593,7 @@ fit4_baseline
 # Mean of squared residuals: 0.1239849
 # % Var explained: 76.38
 
+#http://machinelearningmastery.com/tune-machine-learning-algorithms-in-r/
 # Random Search
 control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
 set.seed(123)
@@ -638,6 +624,7 @@ print(rf_random)
 # RMSE was used to select the optimal model using  the smallest value.
 # The final value used for the model was mtry = 18.
 plot(rf_random)
+
 set.seed(123)
 fit4 <- randomForest(log(train$price) ~ ., data = train.matrix, mtry=18, importance=TRUE)
 fit4
