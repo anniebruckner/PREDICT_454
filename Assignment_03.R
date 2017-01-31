@@ -49,10 +49,6 @@ list.of.packages <- c("doBy"
 lapply(list.of.packages, require, character.only = TRUE)
 
 # Read data
-data <- read.csv(file.path("/Users/annie/Desktop/Northwestern/PREDICT_454/Assignment_02","two_months_salary.csv"), sep=",",header=TRUE)
-head(data)
-
-# Read data
 data <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data", header=F)
 head(data)
 
@@ -136,4 +132,110 @@ all.col.names <- c("word_freq_make",
 colnames(data) <- all.col.names
 names(data)
 
+# Convert to numeric
+data$capital_run_length_longest <- as.numeric(data$capital_run_length_longest)
+data$capital_run_length_total  <- as.numeric(data$capital_run_length_total )
+
+# Convert to factor
+data$y <- as.factor(data$y)
+levels(data$y) <- c("Not_Spam", "Spam")
+summary(data$y)
+# Not_Spam     Spam 
+# 2788     1813
+str(data)
+
+# Create log transform of predictors just in case
+predictors.log < - log(data[1:57]) ### DOESN"T WORK
+head(data[1:57])
+
+# Create scatterplot matrix 
+splom(data[1:57], main="Spam Data")
+
+# Create histograms for all predictor variables
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
+# Create barcharts for all predictor variables
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- barchart(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
+# Create boxplots for all predictor variables except carat
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = names(data)[i])
+  print(p)
+}
+
+######
+
+fac.freq = function(df.fac, df.fac.cn, cat = T){
+  table.results = data.frame()
+  # Check df.fac is factor
+  if (!class(df.fac) %in% c("factor")){
+    stop("Please supply a factor variable to df.fac")
+  }
+  # Assign data.frame and name
+  temp = unlist(strsplit(deparse(substitute(df.fac)),
+                         split = "$", fixed = T))
+  df = eval(as.name(paste(temp[1])))
+  fac = temp[2]
+  # Check if df.fac.cn is missing or named (and class if named)
+  if (missing(df.fac.cn)){
+    cols = colnames(df[, sapply(df, is.factor)])
+  } else if (!class(df.fac.cn) %in% c("factor")){
+    stop("Please supply a factor variable to df.fac.cn")
+  } else {
+    cols = unlist(strsplit(deparse(substitute(df.fac.cn)),
+                           split = "$", fixed = T))[2]
+  }
+  # Factor splits
+  if (cat){
+    for (i in cols){
+      name.var = rep(paste(i), each = nlevels(df[, fac]))
+      name.split = rep(paste(fac), each = nlevels(df[, fac]))
+      table.level = levels(df[, fac])
+      table.agg = aggregate(df[, i], by = list(Var = df[, fac]),
+                            summary)$x
+      table.prop = format(round(prop.table(table.agg, 1) * 100,
+                                digits = 2), nsmall = 2)
+      table.results = as.data.frame(cbind(name.var, name.split,
+                                          table.level, table.prop))
+      colnames(table.results)[1] = "Variable"
+      colnames(table.results)[2] = "Split On"
+      colnames(table.results)[3] = "Levels"
+      if (missing(df.fac.cn)){
+        print(table.results)
+      } else {
+        return(table.results)
+      }
+    }
+  }
+  # Factor counts and frequencies
+  if (!cat){
+    name.var = rep(paste(fac), each = 2)
+    name.type = c("Count", "Percent")
+    table.agg = t(summary(df[, fac]))
+    table.prop = format(round(prop.table(table.agg) * 100,
+                              digits = 2), nsmall = 2)
+    table.row = rbind(table.agg, table.prop)
+    table.col = cbind(name.var, name.type, table.row)
+    table.results = as.data.frame(table.col)
+    colnames(table.results)[1] = "Variable"
+    colnames(table.results)[2] = "Type"
+    return(table.results)
+  }
+}
+
+
+spam.dist = fac.freq(data$y, cat = F)
 
