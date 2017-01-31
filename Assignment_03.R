@@ -49,10 +49,6 @@ list.of.packages <- c("doBy"
 lapply(list.of.packages, require, character.only = TRUE)
 
 # Read data
-data <- read.csv(file.path("/Users/annie/Desktop/Northwestern/PREDICT_454/Assignment_02","two_months_salary.csv"), sep=",",header=TRUE)
-head(data)
-
-# Read data
 data <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data", header=F)
 head(data)
 
@@ -136,4 +132,49 @@ all.col.names <- c("word_freq_make",
 colnames(data) <- all.col.names
 names(data)
 
+# Convert to numeric
+data$capital_run_length_longest <- as.numeric(data$capital_run_length_longest)
+data$capital_run_length_total  <- as.numeric(data$capital_run_length_total )
+
+# Convert to factor
+data$y <- as.factor(data$y)
+levels(data$y) <- c("Not_Spam", "Spam")
+summary(data$y)
+# Not_Spam     Spam 
+# 2788     1813
+str(data)
+
+# Create log transform of predictors just in case
+predictors.log < - log(data[1:57]) ### DOESN"T WORK
+head(data[1:57])
+
+# Create scatterplot matrix 
+splom(data[1:57], main="Spam Data")
+
+# Create histograms for all predictor variables
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
+# Create barcharts for all predictor variables
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- barchart(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
+  print(p)
+}
+
+# Create boxplots for all predictor variables except carat
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = names(data)[i])
+  print(p)
+}
+
+######
 
