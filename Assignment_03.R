@@ -143,6 +143,13 @@ summary(data$y)
 # Not_Spam     Spam 
 # 2788     1813
 str(data)
+barchart(data$y, col = "steelblue")
+
+# Create log transformations of all predictors
+pred.log <- lapply(data[1:57], log)
+pred.log <- data.frame(pred.log, y = data$y)
+head(pred.log)
+
 
 # Create log transform of predictors just in case
 predictors.log < - log(data[1:57]) ### DOESN"T WORK
