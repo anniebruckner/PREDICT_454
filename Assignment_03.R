@@ -150,10 +150,18 @@ pred.log <- lapply(data[1:57], log)
 pred.log <- data.frame(pred.log, y = data$y)
 head(pred.log)
 
+# Create naive tree models
+fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
+fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
 
-# Create log transform of predictors just in case
-predictors.log < - log(data[1:57]) ### DOESN"T WORK
-head(data[1:57])
+
+
+
+
+
+
+
+
 
 # Create scatterplot matrix 
 splom(data[1:57], main="Spam Data")
@@ -181,4 +189,4 @@ for (i in 1:57){
     box.rectangle = list(col= "black", fill = "steelblue")),
     xlab = names(data)[i])
   print(p)
-}
+
