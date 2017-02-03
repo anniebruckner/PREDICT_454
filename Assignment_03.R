@@ -9,7 +9,7 @@
 # Reset plot display
 par(mfrow=c(1,1))
 
-# Install Packages if they don't current exist
+# Install Packages if they don't currently exist
 list.of.packages <- c("doBy"
                       ,"lazyeval"
                       ,"psych"
@@ -154,17 +154,37 @@ head(pred.log)
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
 fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
 
+# Examine correlations among just numeric variables
+c <- cor(data[1:57], use="complete.obs")
 
+correlations <- data.frame(c)
 
+significant.correlations <- data.frame(
+  var1 = character(),
+  var2 = character(),
+  corr = numeric())
 
+for (i in 1:nrow(correlations)){
+  for (j in 1:ncol(correlations)){
+    tmp <- data.frame(
+      var1 = as.character(colnames(correlations)[j]),
+      var2 = as.character(rownames(correlations)[i]),
+      corr = correlations[i,j])
+    
+    if (!is.na(correlations[i,j])) {
+      if (correlations[i,j] > .5 & as.character(tmp$var1) != as.character(tmp$var2)
+          | correlations[i,j] < -.5 & as.character(tmp$var1) != as.character(tmp$var2) ) {
+        significant.correlations <- rbind(significant.correlations,tmp) }
+    }
+  }
+}
 
+significant.correlations <- significant.correlations[order(abs(significant.correlations$corr),decreasing=TRUE),] 
+significant.correlations <- significant.correlations[which(!duplicated(significant.correlations$corr)),]
+significant.correlations
 
-
-
-
-
-# Create scatterplot matrix 
-splom(data[1:57], main="Spam Data")
+# Create scatterplot matrix -- takes way too long -- did significant correlations instead
+# splom(data[1:57], main="Spam Data")
 
 # Create histograms for all predictor variables
 for (i in 1:57){
@@ -172,6 +192,22 @@ for (i in 1:57){
   p <- histogram(as.formula(toPlot), data = data, col = "steelblue",  xlab = names(data)[i])
   print(p)
 }
+
+# Create object containing names of only predictor variables
+pred <- colnames(data[1:57])
+
+# Visualize correlations between numeric variables and responses variable -- NAs + too many variables cause issues
+#corrplot(cor(data[data$y == 0, pred]),
+#         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+#         title = "Not Spam Correlations",
+#         mar=c(1,3,1,3))
+
+#corrplot(cor(data[data$y == 1, pred]),
+#         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+#         title = "Spam Correlations",
+#         mar=c(1,3,1,3))
+
+
 
 # Create barcharts for all predictor variables
 for (i in 1:57){
