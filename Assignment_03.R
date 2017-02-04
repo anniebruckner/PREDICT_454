@@ -300,7 +300,29 @@ set.seed(123)
 mtry <- sqrt(ncol(train.matrix)) # 7.549834
 rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
 print(rf_random)
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+  
+#  mtry  Accuracy   Kappa    
+#1    0.9086204  0.8020479
+#6    0.9528087  0.9004815
+#11    0.9517696  0.8983503
+#12    0.9510456  0.8968460
+#15    0.9501143  0.8949502
+#19    0.9498037  0.8943007
+#21    0.9498066  0.8943489
+#33    0.9476317  0.8897121
+#38    0.9469074  0.8882671
+#39    0.9469064  0.8881823
+#41    0.9471138  0.8886953
+#42    0.9475282  0.8895919
+#50    0.9459751  0.8862731
+#56    0.9457684  0.8858360
 
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 6.
 
 
 
