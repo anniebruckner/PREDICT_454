@@ -298,7 +298,7 @@ fit4_baseline
 control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
 set.seed(123)
 mtry <- sqrt(ncol(train.matrix)) # 7.549834
-rf_random <- train(train.matrix, train$y, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
 print(rf_random)
 
 
