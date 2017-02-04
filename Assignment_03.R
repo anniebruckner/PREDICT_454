@@ -152,6 +152,53 @@ head(pred.log)
 
 summary(data)
 
+
+
+# Plot histograms of the variables--How can I do this using lattice?
+plot_vars <- function (data, column){
+  ggplot(data = data, aes_string(x = column)) +
+    geom_histogram(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+plotsA <- lapply(colnames(data[1:24]), plot_vars, data = data)
+length(plotsA)
+do.call("grid.arrange", c(plotsA, ncol=4))
+
+plotsB <- lapply(colnames(data[25:48]), plot_vars, data = data)
+length(plotsB)
+do.call("grid.arrange", c(plotsB, ncol=4))
+
+plotsC <- lapply(colnames(data[49:54]), plot_vars, data = data)
+length(plotsC)
+do.call("grid.arrange", c(plotsC, ncol=3))
+
+plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
+length(plotsD)
+do.call("grid.arrange", c(plotsD, ncol=3))
+
+# Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
+plot_box <- function (df){
+for (i in 1:57){
+  toPlot = paste0("~ ", names(data)[i], " | y")
+  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    strip = strip.custom(bg="lightgrey"),
+    xlab = names(data)[i])
+  print(p)
+}
+}
+
+plotsE <- lapply(data[55:57], FUN=plot_box)
+length(plotsE)
+do.call("grid.arrange", c(plotsE, ncol=3)) # Error: only 'grobs' allowed in "gList" == how to fix?
+
+#######################################################
+# EDA -- Make sure to talk about a few interesting box plots
+#######################################################
+
 # Create naive tree models
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
 fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
@@ -197,46 +244,28 @@ corrplot(cor(data[data$y == "Spam", pred]),
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          mar=c(1,1,2,2), type = "lower", main = "Correlations for Spam")
 
-# Plot histograms of the variables--How can I do this using lattice?
-plot_vars <- function (data, column){
-  ggplot(data = data, aes_string(x = column)) +
-    geom_histogram(color =I("black"), fill = I("steelblue"))+
-    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
-}
+#######################################################
+# Model Build
+#######################################################
 
-plotsA <- lapply(colnames(data[1:24]), plot_vars, data = data)
-length(plotsA)
-do.call("grid.arrange", c(plotsA, ncol=4))
+# Create train/test sets (70/30)
+nrow(data) # 4601: 0.70*4601 = 3220.7 (train should have 3220 or 3221 observations)
 
-plotsB <- lapply(colnames(data[25:48]), plot_vars, data = data)
-length(plotsB)
-do.call("grid.arrange", c(plotsB, ncol=4))
+set.seed(123)
+train <- sample_frac(data, 0.70)
+train_id <- as.numeric(rownames(train)) 
+test <- data[-train_id,]
 
-plotsC <- lapply(colnames(data[49:54]), plot_vars, data = data)
-length(plotsC)
-do.call("grid.arrange", c(plotsC, ncol=3))
+head(train)
+dim(train) # 3221   58
+head(test)
+dim(test) # 1380   58
 
-plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
-length(plotsD)
-do.call("grid.arrange", c(plotsD, ncol=3))
 
-# Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
-plot_box <- function (df){
-for (i in 1:57){
-  toPlot = paste0("~ ", names(data)[i], " | y")
-  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
-    box.umbrella=list(col= "black"), 
-    box.dot=list(col= "black"), 
-    box.rectangle = list(col= "black", fill = "steelblue")),
-    strip = strip.custom(bg="lightgrey"),
-    xlab = names(data)[i])
-  print(p)
-}
-}
 
-plotsE <- lapply(data[55:57], FUN=plot_box)
-length(plotsE)
-do.call("grid.arrange", c(plotsE, ncol=3)) # Error: only 'grobs' allowed in "gList" == how to fix?
+
+
+
 
 #--------#
 # Code for one lattice boxplot
