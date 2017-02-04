@@ -150,6 +150,8 @@ pred.log <- lapply(data[1:57], log)
 pred.log <- data.frame(pred.log, y = data$y)
 head(pred.log)
 
+summary(data)
+
 # Create naive tree models
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
 fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
@@ -216,7 +218,7 @@ for (i in 1:57){
   print(p)
 }
 
-# Create boxplots for all predictor variables except carat
+# Create boxplots for all predictors
 for (i in 1:57){
   toPlot = paste0("y ~ ", names(data)[i])
   p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
@@ -225,4 +227,106 @@ for (i in 1:57){
     box.rectangle = list(col= "black", fill = "steelblue")),
     xlab = names(data)[i])
   print(p)
+}
+
+# Create histograms for all predictors
+for (i in data[1:57]){
+  toPlot = paste0(names(data)[i])
+p <- histogram(as.formula(toPlot), data = data, col = "steelblue",
+    xlab = names(data)[i])
+  print(p)
+}
+names(data[1])
+
+
+# Plot the variables--How can I do this using lattice?
+plot_vars <- function (data, column){
+  ggplot(data = data, aes_string(x = column)) +
+    geom_histogram(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+plotsA <- lapply(colnames(data[1:24]), plot_vars, data = data)
+length(plotsA)
+do.call("grid.arrange", c(plotsA, ncol=4))
+
+plotsB <- lapply(colnames(data[25:48]), plot_vars, data = data)
+length(plotsB)
+do.call("grid.arrange", c(plotsB, ncol=4))
+
+plotsC <- lapply(colnames(data[49:54]), plot_vars, data = data)
+length(plotsC)
+do.call("grid.arrange", c(plotsC, ncol=3))
+
+plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
+length(plotsD)
+do.call("grid.arrange", c(plotsD, ncol=3))
+
+plot_vars2 <- function (data, column){
+  ggplot(data = data, aes_string(x = column, y = data$y)) +
+    geom_boxplot(color =I("black"), fill = I("steelblue"))+
+    xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
+}
+
+plotsD2 <- lapply(colnames(data[55:57]), plot_vars2, data = data)
+length(plotsD2)
+do.call("grid.arrange", c(plotsD2, ncol=3))
+
+#cb <- bwplot(y~capital_run_length_total, data = data,
+#             par.settings = list(
+#               box.umbrella=list(col= "black"), 
+#               box.dot=list(col= "black"), 
+#               box.rectangle = list(col= "black", fill = "steelblue")),
+#             strip = strip.custom(bg="lightgrey"))
+#cb
+
+#myPlots <- function(variable){
+#  histogram(~y | variable, data = data,
+#                  col = "steelblue", strip = strip.custom(bg="lightgrey"),
+#                  main = variable)
+#}
+
+#lapply(data[c(1:57)],FUN=myPlots)
+
+h1<-histogram(~char_freq_pound, data = pred.log, col = "steelblue")
+class(h1)
+
+cb <- bwplot(y~capital_run_length_total, data = data,
+par.settings = list(
+box.umbrella=list(col= "black"), 
+box.dot=list(col= "black"), 
+box.rectangle = list(col= "black", fill = "steelblue")),
+strip = strip.custom(bg="lightgrey"))
+cb
+
+
+show.settings()
+
+tp <- trellis.par.get()
+
+unusual <- c("grid.pars", "fontsize", "clip", "axis.components",
+             "layout.heights", "layout.widths")
+
+for (u in unusual) tp[[u]] <- NULL
+names.tp <- lapply(tp, names)
+unames <- sort(unique(unlist(names.tp)))
+ans <- matrix(0, nrow = length(names.tp), ncol = length(unames))
+rownames(ans) <- names(names.tp)
+colnames(ans) <- unames
+for (i in seq(along = names.tp))
+  ans[i, ] <- as.numeric(unames %in% names.tp[[i]])
+ans <- ans[, order(-colSums(ans))]
+ans <- ans[order(rowSums(ans)), ]
+ans[ans == 0] <- NA
+
+levelplot(t(ans), colorkey = FALSE, 
+          scales = list(x = list(rot = 90)),
+          panel = function(x, y, z, ...) {
+            panel.abline(v = unique(as.numeric(x)), 
+                         h = unique(as.numeric(y)), 
+                         col = "darkgrey")
+            panel.xyplot(x, y, pch = 16 * z, ...)
+          },
+          xlab = "Graphical parameters", 
+          ylab = "Setting names")
 
