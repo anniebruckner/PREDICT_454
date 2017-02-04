@@ -300,6 +300,9 @@ set.seed(123)
 mtry <- sqrt(ncol(train.matrix)) # 7.549834
 rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
 print(rf_random)
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam'
 #No pre-processing
 #Resampling: Cross-Validated (10 fold, repeated 3 times) 
 #Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
@@ -324,6 +327,22 @@ print(rf_random)
 #Accuracy was used to select the optimal model using  the largest value.
 #The final value used for the model was mtry = 6.
 
+plot(rf_random)
+
+set.seed(123)
+fit4 <- randomForest(train.matrix, train$y, mtry=6, importance=TRUE)
+fit4
+#Number of trees: 500
+#No. of variables tried at each split: 6
+#OOB estimate of  error rate: 4.59%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1901   57  0.02911134
+#Spam           91 1172  0.07205067
+
+#set.seed(123)
+#fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
+#fit4a # OOB estimate of  error rate: 5.06%
 
 
 
