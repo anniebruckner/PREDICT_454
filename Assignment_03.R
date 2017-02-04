@@ -152,8 +152,6 @@ head(pred.log)
 
 summary(data)
 
-
-
 # Plot histograms of the variables--How can I do this using lattice?
 plot_vars <- function (data, column){
   ggplot(data = data, aes_string(x = column)) +
@@ -200,6 +198,7 @@ do.call("grid.arrange", c(plotsE, ncol=3)) # Error: only 'grobs' allowed in "gLi
 #######################################################
 
 # Create naive tree models
+set.seed(123)
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
 fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
 
@@ -245,7 +244,7 @@ corrplot(cor(data[data$y == "Spam", pred]),
          mar=c(1,1,2,2), type = "lower", main = "Correlations for Spam")
 
 #######################################################
-# Model Build
+# Model Build - Set Up
 #######################################################
 
 # Create train/test sets (70/30)
@@ -261,7 +260,46 @@ dim(train) # 3221   58
 head(test)
 dim(test) # 1380   58
 
+#######################################################
+# Model Build -- Fit Model Suite
+#######################################################
 
+# (1) a logistic regression model using variable selection
+
+# (2) a tree model
+set.seed(123)
+fit2 <- rpart(y ~ ., data = train)
+fit2
+dev.new(width=10, height=8) # This fixes the tiny font issue
+fit2_plot <- fancyRpartPlot(fit2, sub = "") # Why is the font so small?
+dev.off()
+
+# (3) a Support Vector Machine
+
+# (4) Random Forest
+set.seed(123)
+train.matrix  <- model.matrix(y ~ ., data=train)[,-58]
+ncol(train.matrix) # 57
+head(train.matrix)
+
+set.seed(123)
+# mtry can be 57 at most because of number of columns in train.matrix
+fit4_baseline <- randomForest(train.matrix, train$y, mtry=floor(sqrt(ncol(train.matrix))), importance=TRUE)
+fit4_baseline
+#Number of trees: 500
+#No. of variables tried at each split: 7
+#OOB estimate of  error rate: 4.75%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1901   57  0.02911134
+#Spam           96 1167  0.07600950
+
+# Random Search
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+set.seed(123)
+mtry <- sqrt(ncol(train.matrix)) # 7.549834
+rf_random <- train(train.matrix, train$y, method="rf", metric="RMSE", tuneLength=15, trControl=control)
+print(rf_random)
 
 
 
