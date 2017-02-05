@@ -283,7 +283,7 @@ summary.regsubsets(model.logit.bwd)
 #model.logit.bwd$rss[58] # 330.9772
 
 # Use stepwise subset selection on model.logit
-model.logit.step <- regsubsets(y ~ ., data = train, nvmax=57, method="seqrep")
+model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
 options(max.print=1000000)
 summary(model.logit.step)
 names(model.logit.step) # Is there a metric that lets me see which is best?
@@ -296,7 +296,7 @@ logit.control <- trainControl(classProbs = T, verboseIter = T)
 # https://www.r-bloggers.com/evaluating-logistic-regression-models/
 set.seed(123)
 model.logit.stepAIC <- train(y ~ ., data = train, method = "glmStepAIC",
-                             direction = "forward", trControl = trainControl(classProbs = T))
+                             direction = "forward", trControl = logit.control)
 
 names(model.logit.stepAIC)
 model.logit.stepAIC$finalModel
@@ -318,7 +318,6 @@ mod_fit$finalModel
 #Null Deviance:	    4314 
 #Residual Deviance: 1949 	AIC: 1971
 
-
 set.seed(123)
 model.logit.1 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
 summary(model.logit.1)
@@ -339,16 +338,6 @@ summary(model.logit.1)
 #  ---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
-
-
-set.seed(123)
-spam.glm.m1 = train(y ~ ., 
-                    data = spam[spam.trn, ], 
-                    method = "glmStepAIC", direction = "forward", 
-                    trControl = spam.glm.fc)
-
-
-
 # (2) a tree model
 set.seed(123)
 fit2 <- rpart(y ~ ., data = train)
@@ -358,6 +347,41 @@ fit2_plot <- fancyRpartPlot(fit2, sub = "") # Why is the font so small?
 dev.off()
 
 # (3) a Support Vector Machine
+
+set.seed(123)
+model.svm <- svm(y~., data=train, kernel ="linear", cost =1)
+summary(model.svm)
+plot(model.svm , train$y)
+
+set.seed(123)
+svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+summary(svm.tune)
+#Parameter tuning of ‘svm’:
+#- sampling method: 10-fold cross validation 
+#- best parameters:
+# cost: 5
+#- best performance: 0.06612599 
+#- Detailed performance results:
+#  cost      error  dispersion
+#1 1e-03 0.39212834 0.031195773
+#2 1e-02 0.32568506 0.035421299
+#3 1e-01 0.09934908 0.013102509
+#4 1e+00 0.07326693 0.010143842
+#5 5e+00 0.06612599 0.009470988
+#6 1e+01 0.06612695 0.008272670
+#7 1e+02 0.07916851 0.009176701
+
+
+svm.control <- trainControl(method = "cv", classProbs = T, verboseIter = T)
+
+processing.time <- proc.time()
+names(getModelInfo())
+set.seed(123)
+model.svm.CV <- train(y ~ ., data = train, method = "svmRadial", # or svmRadialWeights?
+                    trControl = svm.control)
+proc.time() - processing.time
+#rm(processing.time)
+
 
 # (4) Random Forest
 set.seed(123)
