@@ -264,7 +264,25 @@ dim(test) # 1380   58
 # Model Build -- Fit Model Suite
 #######################################################
 
+# First set completely naive logistic model without using variable selection
+set.seed(123)
+model.logit <- glm(y ~ ., data = train, family=binomial("logit"))
+#Warning message:
+#  glm.fit: fitted probabilities numerically 0 or 1 occurred 
+summary(model.logit)
+
 # (1) a logistic regression model using variable selection
+
+# Use backward subset selection on model.logit
+model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=57, method="backward")
+options(max.print=1000000)
+summary(model.logit.bwd)
+names(model.logit.bwd) # Is there a metric that lets me see which is best?
+
+which.min(model.logit.bwd$rss) # 58 
+model.logit.bwd$rss[58] # 330.9772
+
+
 
 # (2) a tree model
 set.seed(123)
@@ -278,7 +296,7 @@ dev.off()
 
 # (4) Random Forest
 set.seed(123)
-train.matrix  <- model.matrix(y ~ ., data=train)[,-58]
+train.matrix  <- model.matrix(y ~ ., data=train)[,-58] # create predictor matrix (subtract last column, the response variable)
 ncol(train.matrix) # 57
 head(train.matrix)
 
@@ -295,11 +313,11 @@ fit4_baseline
 #Spam           96 1167  0.07600950
 
 # Random Search
-control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
-set.seed(123)
-mtry <- sqrt(ncol(train.matrix)) # 7.549834
-rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
-print(rf_random)
+#control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+#set.seed(123)
+#mtry <- sqrt(ncol(train.matrix)) # 7.549834
+#rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
+#print(rf_random)
 #3221 samples
 #57 predictor
 #2 classes: 'Not_Spam', 'Spam'
@@ -327,11 +345,12 @@ print(rf_random)
 #Accuracy was used to select the optimal model using  the largest value.
 #The final value used for the model was mtry = 6.
 
-plot(rf_random)
+#plot(rf_random)
 
 set.seed(123)
 fit4 <- randomForest(train.matrix, train$y, mtry=6, importance=TRUE)
-fit4
+fit4 # run rf_random again when I have time since the fit4 output changed
+# results on 2/3
 #Number of trees: 500
 #No. of variables tried at each split: 6
 #OOB estimate of  error rate: 4.59%
@@ -340,9 +359,18 @@ fit4
 #Not_Spam     1901   57  0.02911134
 #Spam           91 1172  0.07205067
 
-#set.seed(123)
-#fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
-#fit4a # OOB estimate of  error rate: 5.06%
+# results on 2/4
+#Number of trees: 500
+#No. of variables tried at each split: 6
+#OOB estimate of  error rate: 4.75%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1901   57  0.02911134
+#Spam           96 1167  0.07600950
+
+set.seed(123)
+fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
+fit4a # OOB estimate of  error rate: 5.06%
 
 
 
