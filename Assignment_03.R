@@ -278,9 +278,74 @@ model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=57, method="backward")
 options(max.print=1000000)
 summary(model.logit.bwd)
 names(model.logit.bwd) # Is there a metric that lets me see which is best?
+summary.regsubsets(model.logit.bwd)
+#which.min(model.logit.bwd$rss) # 58 
+#model.logit.bwd$rss[58] # 330.9772
 
-which.min(model.logit.bwd$rss) # 58 
-model.logit.bwd$rss[58] # 330.9772
+# Use stepwise subset selection on model.logit
+model.logit.step <- regsubsets(y ~ ., data = train, nvmax=57, method="seqrep")
+options(max.print=1000000)
+summary(model.logit.step)
+names(model.logit.step) # Is there a metric that lets me see which is best?
+#which.min(model.logit.step$rss) # 58 
+#model.logit.step$rss[58] # 330.9772
+
+logit.control <- trainControl(classProbs = T, verboseIter = T)
+
+# Another stepwise method that identifies which is best:
+# https://www.r-bloggers.com/evaluating-logistic-regression-models/
+set.seed(123)
+model.logit.stepAIC <- train(y ~ ., data = train, method = "glmStepAIC",
+                             direction = "forward", trControl = trainControl(classProbs = T))
+
+names(model.logit.stepAIC)
+model.logit.stepAIC$finalModel
+length(model.logit.stepAIC$finalModel$coefficients)-1 # find number of predictors used: 37
+AIC(model.logit.stepAIC$finalModel) # 1330.207
+
+
+mod_fit <- train(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, method="glm", family="binomial")
+mod_fit$finalModel
+#Coefficients:
+#  (Intercept)            word_freq_your             word_freq_000          word_freq_remove  
+#-2.093421                  0.336930                  3.336319                  3.345913  
+#word_freq_free  capital_run_length_total           word_freq_money     char_freq_exclamation  
+#0.868948                  0.001193                  2.260708                  0.591771  
+#word_freq_our              word_freq_hp             char_freq_usd  
+#0.549758                 -3.260988                  5.444820  
+
+#Degrees of Freedom: 3220 Total (i.e. Null);  3210 Residual
+#Null Deviance:	    4314 
+#Residual Deviance: 1949 	AIC: 1971
+
+
+set.seed(123)
+model.logit.1 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
+summary(model.logit.1)
+
+#Coefficients:
+#  Estimate Std. Error z value Pr(>|z|)    
+#(Intercept)              -2.0934207  0.0895554 -23.376  < 2e-16 ***
+#  word_freq_your            0.3369296  0.0442133   7.621 2.53e-14 ***
+#  word_freq_000             3.3363191  0.5431417   6.143 8.12e-10 ***
+#  word_freq_remove          3.3459128  0.3705193   9.030  < 2e-16 ***
+#  word_freq_free            0.8689480  0.1129557   7.693 1.44e-14 ***
+#  capital_run_length_total  0.0011929  0.0001555   7.669 1.73e-14 ***
+#  word_freq_money           2.2607075  0.3790107   5.965 2.45e-09 ***
+#  char_freq_exclamation     0.5917706  0.1045152   5.662 1.50e-08 ***
+#  word_freq_our             0.5497582  0.0817822   6.722 1.79e-11 ***
+#  word_freq_hp             -3.2609878  0.4612506  -7.070 1.55e-12 ***
+#  char_freq_usd             5.4448198  0.7180941   7.582 3.39e-14 ***
+#  ---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+set.seed(123)
+spam.glm.m1 = train(y ~ ., 
+                    data = spam[spam.trn, ], 
+                    method = "glmStepAIC", direction = "forward", 
+                    trControl = spam.glm.fc)
 
 
 
@@ -383,3 +448,12 @@ bwplot(~ capital_run_length_average | y, data = data,
          box.dot=list(col= "black"), 
          box.rectangle = list(col= "black", fill = "steelblue")),
        strip = strip.custom(bg="lightgrey"))
+
+#--------# Discard #--------#
+install.packages("bestglm")
+library(bestglm)
+res.best.logistic <- bestglm(Xy = train, 
+                             family = binomial,          # binomial family for logistic
+                             IC = "AIC",                 # Information criteria for
+                             method = "seqrep")
+res.best.logistic$BestModels
