@@ -265,14 +265,15 @@ dim(test) # 1380   58
 #######################################################
 
 # First set completely naive logistic model without using variable selection
-set.seed(123)
-model.logit <- glm(y ~ ., data = train, family=binomial("logit"))
+#set.seed(123)
+#model.logit <- glm(y ~ ., data = train, family=binomial("logit"))
 #Warning message:
 #  glm.fit: fitted probabilities numerically 0 or 1 occurred 
-summary(model.logit)
+#summary(model.logit)
 
 # (1) a logistic regression model using variable selection
 
+# Model A
 # Use backward subset selection on model.logit
 model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=57, method="backward")
 options(max.print=1000000)
@@ -282,6 +283,7 @@ summary.regsubsets(model.logit.bwd)
 #which.min(model.logit.bwd$rss) # 58 
 #model.logit.bwd$rss[58] # 330.9772
 
+# Model B
 # Use stepwise subset selection on model.logit
 model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
 options(max.print=1000000)
@@ -290,7 +292,8 @@ names(model.logit.step) # Is there a metric that lets me see which is best?
 #which.min(model.logit.step$rss) # 58 
 #model.logit.step$rss[58] # 330.9772
 
-logit.control <- trainControl(classProbs = T, verboseIter = T)
+# Model C
+logit.control <- trainControl(classProbs = T, savePred = T , verboseIter = T)
 
 # Another stepwise method that identifies which is best:
 # https://www.r-bloggers.com/evaluating-logistic-regression-models/
@@ -303,7 +306,7 @@ model.logit.stepAIC$finalModel
 length(model.logit.stepAIC$finalModel$coefficients)-1 # find number of predictors used: 37
 AIC(model.logit.stepAIC$finalModel) # 1330.207
 
-
+# Model D
 mod_fit <- train(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, method="glm", family="binomial")
 mod_fit$finalModel
 #Coefficients:
@@ -318,6 +321,7 @@ mod_fit$finalModel
 #Null Deviance:	    4314 
 #Residual Deviance: 1949 	AIC: 1971
 
+# Model E
 set.seed(123)
 model.logit.1 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
 summary(model.logit.1)
@@ -339,6 +343,7 @@ summary(model.logit.1)
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 # (2) a tree model
+# Model A
 set.seed(123)
 fit2 <- rpart(y ~ ., data = train)
 fit2
@@ -346,8 +351,16 @@ dev.new(width=10, height=8) # This fixes the tiny font issue
 fit2_plot <- fancyRpartPlot(fit2, sub = "") # Why is the font so small?
 dev.off()
 
-# (3) a Support Vector Machine
+# Model B
+control.tree <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+set.seed(123)
+tree.CV <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
+# Fitting cp = 0.0435 on full training set
+tree.CV$finalModel
+fancyRpartPlot(tree.CV$finalModel, sub = "")
 
+# (3) a Support Vector Machine
+# Model A
 set.seed(123)
 model.svm <- svm(y~., data=train, kernel ="linear", cost =1)
 summary(model.svm)
@@ -355,6 +368,14 @@ plot(model.svm , train$y)
 
 set.seed(123)
 svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+svm.tune$best.model
+#Parameters:
+#  SVM-Type:  C-classification 
+#SVM-Kernel:  radial 
+#cost:  5 
+#gamma:  0.01754386 
+#Number of Support Vectors:  828
+
 summary(svm.tune)
 #Parameter tuning of ‘svm’:
 #- sampling method: 10-fold cross validation 
@@ -371,19 +392,91 @@ summary(svm.tune)
 #6 1e+01 0.06612695 0.008272670
 #7 1e+02 0.07916851 0.009176701
 
-
-svm.control <- trainControl(method = "cv", classProbs = T, verboseIter = T)
-
+# Model B
+svm.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
 processing.time <- proc.time()
-names(getModelInfo())
+#names(getModelInfo())
 set.seed(123)
-model.svm.CV <- train(y ~ ., data = train, method = "svmRadial", # or svmRadialWeights?
-                    trControl = svm.control)
-proc.time() - processing.time
-#rm(processing.time)
+model.svm.CV <- train(y ~ ., data = train, method = "svmRadial", # or svmRadialWeights? -- same results
+                    trControl = svm.control) # metric="ROC" doesn't do anything for this model
+#+ Fold01: sigma=0.02897, C=0.25 
+#- Fold01: sigma=0.02897, C=0.25 
+#+ Fold01: sigma=0.02897, C=0.50 
+#- Fold01: sigma=0.02897, C=0.50 
+#+ Fold01: sigma=0.02897, C=1.00 
+#- Fold01: sigma=0.02897, C=1.00 
+#+ Fold02: sigma=0.02897, C=0.25 
+#- Fold02: sigma=0.02897, C=0.25 
+#+ Fold02: sigma=0.02897, C=0.50 
+#- Fold02: sigma=0.02897, C=0.50 
+#+ Fold02: sigma=0.02897, C=1.00 
+#- Fold02: sigma=0.02897, C=1.00 
+#+ Fold03: sigma=0.02897, C=0.25 
+#- Fold03: sigma=0.02897, C=0.25 
+#+ Fold03: sigma=0.02897, C=0.50 
+#- Fold03: sigma=0.02897, C=0.50 
+#+ Fold03: sigma=0.02897, C=1.00 
+#- Fold03: sigma=0.02897, C=1.00 
+#+ Fold04: sigma=0.02897, C=0.25 
+#- Fold04: sigma=0.02897, C=0.25 
+#+ Fold04: sigma=0.02897, C=0.50 
+#- Fold04: sigma=0.02897, C=0.50 
+#+ Fold04: sigma=0.02897, C=1.00 
+#- Fold04: sigma=0.02897, C=1.00 
+#+ Fold05: sigma=0.02897, C=0.25 
+#- Fold05: sigma=0.02897, C=0.25 
+#+ Fold05: sigma=0.02897, C=0.50 
+#- Fold05: sigma=0.02897, C=0.50 
+#+ Fold05: sigma=0.02897, C=1.00 
+#- Fold05: sigma=0.02897, C=1.00 
+#+ Fold06: sigma=0.02897, C=0.25 
+#- Fold06: sigma=0.02897, C=0.25 
+#+ Fold06: sigma=0.02897, C=0.50 
+#- Fold06: sigma=0.02897, C=0.50 
+#+ Fold06: sigma=0.02897, C=1.00 
+#- Fold06: sigma=0.02897, C=1.00 
+#+ Fold07: sigma=0.02897, C=0.25 
+#- Fold07: sigma=0.02897, C=0.25 
+#+ Fold07: sigma=0.02897, C=0.50 
+#- Fold07: sigma=0.02897, C=0.50 
+#+ Fold07: sigma=0.02897, C=1.00 
+#- Fold07: sigma=0.02897, C=1.00 
+#+ Fold08: sigma=0.02897, C=0.25 
+#- Fold08: sigma=0.02897, C=0.25 
+#+ Fold08: sigma=0.02897, C=0.50 
+#- Fold08: sigma=0.02897, C=0.50 
+#+ Fold08: sigma=0.02897, C=1.00 
+#- Fold08: sigma=0.02897, C=1.00 
+#+ Fold09: sigma=0.02897, C=0.25 
+#- Fold09: sigma=0.02897, C=0.25 
+#+ Fold09: sigma=0.02897, C=0.50 
+#- Fold09: sigma=0.02897, C=0.50 
+#+ Fold09: sigma=0.02897, C=1.00 
+#- Fold09: sigma=0.02897, C=1.00 
+#+ Fold10: sigma=0.02897, C=0.25 
+#- Fold10: sigma=0.02897, C=0.25 
+#+ Fold10: sigma=0.02897, C=0.50 
+#- Fold10: sigma=0.02897, C=0.50 
+#+ Fold10: sigma=0.02897, C=1.00 
+#- Fold10: sigma=0.02897, C=1.00 
+#Aggregating results
+#Selecting tuning parameters
+#Fitting sigma = 0.029, C = 1 on full training set
+
+model.svm.CV$finalModel
+#Support Vector Machine object of class "ksvm" 
+#SV type: C-svc  (classification) 
+#parameter : cost C = 1 
+#Gaussian Radial Basis kernel function. 
+#Hyperparameter : sigma =  0.0289667211129033 
+#Number of Support Vectors : 1082 
+#Objective Function Value : -603.77 
+#Training error : 0.044396 
+#Probability model included. 
 
 
 # (4) Random Forest
+# Model A
 set.seed(123)
 train.matrix  <- model.matrix(y ~ ., data=train)[,-58] # create predictor matrix (subtract last column, the response variable)
 ncol(train.matrix) # 57
@@ -460,6 +553,12 @@ fit4 # run rf_random again when I have time since the fit4 output changed
 set.seed(123)
 fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
 fit4a # OOB estimate of  error rate: 5.06%
+
+# Model B
+rf.control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+set.seed(123)
+
+model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control)
 
 
 
