@@ -147,9 +147,13 @@ str(data)
 1813/4601 # 0.3940448 are spam
 
 # Create log transformations of all predictors
-pred.log <- lapply(data[1:57], log)
-pred.log <- data.frame(pred.log, y = data$y)
-head(pred.log)
+#pred.log <- lapply(data[1:57], log)
+#pred.log <- data.frame(pred.log, y = data$y)
+#head(pred.log) # has -Inf
+
+pred.log2 <- lapply(data[1:57], log1p)
+pred.log2 <- data.frame(pred.log2, y = data$y)
+head(pred.log2)
 
 summary(data)
 
@@ -187,16 +191,51 @@ do.call("grid.arrange", c(plotsD, ncol=3))
 # Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
 plot_box <- function (df){
 for (i in 1:57){
-  toPlot = paste0("~ ", names(data)[i], " | y")
-  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+  toPlot = paste0("~ ", names(df)[i], " | y")
+  p <- bwplot(as.formula(toPlot), data = df, par.settings = list(
     box.umbrella=list(col= "black"), 
     box.dot=list(col= "black"), 
     box.rectangle = list(col= "black", fill = "steelblue")),
     strip = strip.custom(bg="lightgrey"),
-    xlab = names(data)[i])
+    xlab = names(df)[i])
   print(p)
 }
 }
+plot_box(data)
+plot_box(pred.log2)
+
+
+plotsAlog <- lapply(colnames(pred.log2[1:24]), plot_box, data = pred.log2)
+length(plotsAlog)
+do.call("grid.arrange", c(plotsAlog, ncol=4))
+
+
+# Create boxplots for all predictor variables except carat
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(data)[i])
+  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = names(data)[i])
+  print(p)
+}
+
+# Create boxplots for all predictor variables except carat
+for (i in 1:57){
+  toPlot = paste0("y ~ ", names(pred.log2)[i])
+  p <- bwplot(as.formula(toPlot), data = pred.log2, par.settings = list(
+    box.umbrella=list(col= "black"), 
+    box.dot=list(col= "black"), 
+    box.rectangle = list(col= "black", fill = "steelblue")),
+    xlab = names(pred.log2)[i])
+  print(p)
+}
+
+plotsA.box <- lapply(colnames(pred.log2[1:24]), plot_box, data = pred.log2)
+length(plotsA.box)
+do.call("grid.arrange", c(plotsA.box, ncol=4))
+
 
 #plotsF <- lapply(data[55:57], FUN=plot_box)
 #length(plotsF)
@@ -209,7 +248,7 @@ for (i in 1:57){
 # Create naive tree models
 set.seed(123)
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
-fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
+#fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
 
 # Examine correlations among just numeric variables
 c <- cor(data[1:57], use="complete.obs")
@@ -590,13 +629,14 @@ model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control2)
 
 #--------#
 # Code for one lattice boxplot
-bwplot(~ capital_run_length_average | y, data = data,
+crla <- bwplot(~ capital_run_length_average | y, data = data,
        layout = c(2, 1),
        par.settings = list(
          box.umbrella=list(col= "black"), 
          box.dot=list(col= "black"), 
          box.rectangle = list(col= "black", fill = "steelblue")),
        strip = strip.custom(bg="lightgrey"))
+class(crla)
 
 #--------# Discard #--------#
 install.packages("bestglm")
