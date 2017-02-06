@@ -555,11 +555,16 @@ fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
 fit4a # OOB estimate of  error rate: 5.06%
 
 # Model B
-rf.control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+rf.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+rf.control2 <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+
 set.seed(123)
-
 model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control)
+#Fitting mtry = 29 on full training set
 
+set.seed(123)
+model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control2)
+#Fitting mtry = 29 on full training set
 
 
 #--------#
