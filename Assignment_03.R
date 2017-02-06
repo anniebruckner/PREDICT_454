@@ -63,7 +63,7 @@ nrow(data) # 4601 rows
 ncol(data) # 58 variables
 names(data) # need to be renamed
 str(data) # all numeric except last 3 are integer
-summary(data) # no missing data
+summary(data) # no missing data, no invalid data (negative values, in this case)
 
 # Check variable classes
 sapply(data, class) # V58 = response since it's the only integer variable with only 0 or 1 values
@@ -142,8 +142,9 @@ levels(data$y) <- c("Not_Spam", "Spam")
 summary(data$y)
 # Not_Spam     Spam 
 # 2788     1813
-str(data)
 barchart(data$y, col = "steelblue")
+str(data)
+1813/4601 # 0.3940448 are spam
 
 # Create log transformations of all predictors
 pred.log <- lapply(data[1:57], log)
@@ -158,6 +159,10 @@ plot_vars <- function (data, column){
     geom_histogram(color =I("black"), fill = I("steelblue"))+
     xlab(column) + theme_bw() + theme(axis.title=element_text(size=8, face="bold"))
 }
+
+#plotsAll <- lapply(colnames(data[1:57]), plot_vars, data = data)
+#length(plotsAll)
+#do.call("grid.arrange", c(plotsAll, nrow=19)) # unreadable
 
 plotsA <- lapply(colnames(data[1:24]), plot_vars, data = data)
 length(plotsA)
@@ -175,6 +180,10 @@ plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
 length(plotsD)
 do.call("grid.arrange", c(plotsD, ncol=3))
 
+#plotsE <- lapply(colnames(data[17:20, 49, 52, 55:56]), plot_vars, data = data)
+#length(plotsE)
+#do.call("grid.arrange", c(plotsE, nrow=2))
+
 # Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
 plot_box <- function (df){
 for (i in 1:57){
@@ -189,9 +198,9 @@ for (i in 1:57){
 }
 }
 
-plotsE <- lapply(data[55:57], FUN=plot_box)
-length(plotsE)
-do.call("grid.arrange", c(plotsE, ncol=3)) # Error: only 'grobs' allowed in "gList" == how to fix?
+#plotsF <- lapply(data[55:57], FUN=plot_box)
+#length(plotsF)
+#do.call("grid.arrange", c(plotsF, ncol=3)) # Error: only 'grobs' allowed in "gList" == how to fix?
 
 #######################################################
 # EDA -- Make sure to talk about a few interesting box plots
@@ -565,6 +574,18 @@ model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control)
 set.seed(123)
 model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control2)
 #Fitting mtry = 29 on full training set
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #--------#
