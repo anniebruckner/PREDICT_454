@@ -563,7 +563,6 @@ model.logit.step2.cmat.test
 
 # -------------------------------------------------------------------------#
 # (2) a tree model
-# Model A
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.tree <- rpart(y ~ ., data = train)
@@ -593,9 +592,9 @@ par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
 set.seed(123)
-model.tree.pred2 <- predict(model.tree, newdata = train, type = "class")
-length(model.tree.pred) # 3221
-head(model.tree.pred) # This needs to show just Spam or Not_Spam
+model.tree.pred2 <- predict(model.tree, newdata = train)
+length(model.tree.pred2) # 3221
+head(model.tree.pred2) # This needs to show just Spam or Not_Spam--shows matrix with probabilities of each prediction
 set.seed(123)
 model.tree.cmat <- confusionMatrix(model.tree.pred2, train$y)
 model.tree.cmat
@@ -605,14 +604,35 @@ model.tree.cmat
 # Predict test
 set.seed(123)
 model.tree.pred.test <- predict(model.tree, newdata = test)
+length(model.tree.pred.test) # 3221
+head(model.tree.pred.test) # This needs to show just Spam or Not_Spam
 set.seed(123)
 model.tree.cmat.test <- confusionMatrix(model.tree.pred.test, test$y)
 model.tree.cmat.test
 
+#######
+
+model.tree.pred2.binary <- data.frame(model.tree.pred2)
+
+model.tree.pred2.binary$y <- 0
+head(model.tree.pred2.binary)
+model.tree.pred2.binary[,1]
+
+# Convert to factor
+model.tree.pred2.binary$y <- as.factor(model.tree.pred2.binary$y)
+
+for (i in 1:nrow(model.tree.pred2.binary)){
+  model.tree.pred2.binary[i,3]<- ifelse(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], "Not_Spam", "Spam")
+   }
+      if else(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], model.tree.pred2.binary[i,3]=="0", model.tree.pred2.binary[i,3]=="1")}
+
+head(model.tree.pred2.binary)
+summary(model.tree.pred2.binary$y)
+
+model.tree.pred2.binary$y <- data.frame(y=ifelse(model.tree.pred2.binary$Not_Spam > model.tree.pred2.binary$Not_Spam, "Not_Spam", "Spam"))
 
 
-
-
+#####
 
 
 
