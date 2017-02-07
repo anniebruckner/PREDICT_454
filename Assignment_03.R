@@ -766,12 +766,12 @@ rf_baseline
 #Spam           96 1167  0.07600950
 
 # Random Search
+set.seed(123)
+control.rf <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+mtry <- sqrt(ncol(train.matrix)) # 7.549834
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
-mtry <- sqrt(ncol(train.matrix)) # 7.549834
-set.seed(123)
-rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
+rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", trControl=control.rf) # removed tuneLength=15
 proc.time() - ptm # Stop the clock
 print(rf_random)
 #3221 samples
