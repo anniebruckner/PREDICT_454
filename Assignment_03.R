@@ -967,6 +967,8 @@ rf_random.fit
 #Not_Spam     1894   64  0.03268641
 #Spam           88 1175  0.06967538
 
+varImpPlot(rf_random.fit, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
 # Predict train
 set.seed(123)
 rf_random.fit.pred <- predict(rf_random.fit, newdata = train.matrix, 
