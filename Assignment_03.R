@@ -939,10 +939,9 @@ model.tree.cmat.test.log
 #'Positive' Class : Not_Spam
 
 
-
 # -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
-# Wasn't sure how to create prediction from model using svm()
+# Wasn't sure how to create prediction from model using svm() -- put discarded code at end
 
 # Model using train()
 ptm <- proc.time() # Start the clock!
@@ -1053,8 +1052,8 @@ model.svm.CV.pred2 <- predict(model.svm.CV, newdata = train) # no type = "prob"
 dim(model.svm.CV.pred2)
 head(model.svm.CV.pred2)
 set.seed(123)
-svm.tune.cmat <- confusionMatrix(model.svm.CV.pred2, train$y)
-svm.tune.cmat
+model.svm.CV.cmat <- confusionMatrix(model.svm.CV.pred2, train$y)
+model.svm.CV.cmat
 #Confusion Matrix and Statistics
 #Reference
 #Prediction Not_Spam Spam
@@ -1079,7 +1078,6 @@ svm.tune.cmat
 #Balanced Accuracy : 0.9488          
 
 #'Positive' Class : Not_Spam
-
 
 # Predict test
 set.seed(123)
@@ -1115,7 +1113,174 @@ model.svm.CV.cmat.test
 
 
 ### Do above code using log train and log test sets?
+#--------# Using train and test log of predictors #--------# 
+# Model using train()
+ptm <- proc.time() # Start the clock!
+svm.control.log <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+#names(getModelInfo())
+set.seed(123)
+model.svm.CV.log <- train(y ~ ., data = train.log, method = "svmRadial", # or svmRadialWeights? -- same results
+                      trControl = svm.control.log) # metric="ROC" doesn't do anything for this model
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#45.577   3.004  48.642
 
+#+ Fold01: sigma=0.01632, C=0.25 
+#- Fold01: sigma=0.01632, C=0.25 
+#+ Fold01: sigma=0.01632, C=0.50 
+#- Fold01: sigma=0.01632, C=0.50 
+#+ Fold01: sigma=0.01632, C=1.00 
+#- Fold01: sigma=0.01632, C=1.00 
+#+ Fold02: sigma=0.01632, C=0.25 
+#- Fold02: sigma=0.01632, C=0.25 
+#+ Fold02: sigma=0.01632, C=0.50 
+#- Fold02: sigma=0.01632, C=0.50 
+#+ Fold02: sigma=0.01632, C=1.00 
+#- Fold02: sigma=0.01632, C=1.00 
+#+ Fold03: sigma=0.01632, C=0.25 
+#- Fold03: sigma=0.01632, C=0.25 
+#+ Fold03: sigma=0.01632, C=0.50 
+#- Fold03: sigma=0.01632, C=0.50 
+#+ Fold03: sigma=0.01632, C=1.00 
+#- Fold03: sigma=0.01632, C=1.00 
+#+ Fold04: sigma=0.01632, C=0.25 
+#- Fold04: sigma=0.01632, C=0.25 
+#+ Fold04: sigma=0.01632, C=0.50 
+#- Fold04: sigma=0.01632, C=0.50 
+#+ Fold04: sigma=0.01632, C=1.00 
+#- Fold04: sigma=0.01632, C=1.00 
+#+ Fold05: sigma=0.01632, C=0.25 
+#- Fold05: sigma=0.01632, C=0.25 
+#+ Fold05: sigma=0.01632, C=0.50 
+#- Fold05: sigma=0.01632, C=0.50 
+#+ Fold05: sigma=0.01632, C=1.00 
+#- Fold05: sigma=0.01632, C=1.00 
+#+ Fold06: sigma=0.01632, C=0.25 
+#- Fold06: sigma=0.01632, C=0.25 
+#+ Fold06: sigma=0.01632, C=0.50 
+#- Fold06: sigma=0.01632, C=0.50 
+#+ Fold06: sigma=0.01632, C=1.00 
+#- Fold06: sigma=0.01632, C=1.00 
+#+ Fold07: sigma=0.01632, C=0.25 
+#- Fold07: sigma=0.01632, C=0.25 
+#+ Fold07: sigma=0.01632, C=0.50 
+#- Fold07: sigma=0.01632, C=0.50 
+#+ Fold07: sigma=0.01632, C=1.00 
+#- Fold07: sigma=0.01632, C=1.00 
+#+ Fold08: sigma=0.01632, C=0.25 
+#- Fold08: sigma=0.01632, C=0.25 
+#+ Fold08: sigma=0.01632, C=0.50 
+#- Fold08: sigma=0.01632, C=0.50 
+#+ Fold08: sigma=0.01632, C=1.00 
+#- Fold08: sigma=0.01632, C=1.00 
+#+ Fold09: sigma=0.01632, C=0.25 
+#- Fold09: sigma=0.01632, C=0.25 
+#+ Fold09: sigma=0.01632, C=0.50 
+#- Fold09: sigma=0.01632, C=0.50 
+#+ Fold09: sigma=0.01632, C=1.00 
+#- Fold09: sigma=0.01632, C=1.00 
+#+ Fold10: sigma=0.01632, C=0.25 
+#- Fold10: sigma=0.01632, C=0.25 
+#+ Fold10: sigma=0.01632, C=0.50 
+#- Fold10: sigma=0.01632, C=0.50 
+#+ Fold10: sigma=0.01632, C=1.00 
+#- Fold10: sigma=0.01632, C=1.00 
+#Aggregating results
+#Selecting tuning parameters
+#Fitting sigma = 0.0163, C = 1 on full training set
+
+model.svm.CV.log$finalModel
+#Support Vector Machine object of class "ksvm" 
+#SV type: C-svc  (classification) 
+#parameter : cost C = 1 
+#Gaussian Radial Basis kernel function. 
+#Hyperparameter : sigma =  0.0163180776215331 
+#Number of Support Vectors : 829 
+#Objective Function Value : -495.5137 
+#Training error : 0.043775 
+#Probability model included.
+
+# Predict train
+set.seed(123)
+model.svm.CV.pred.log <- predict(model.svm.CV.log, newdata = train.log, 
+                             type = "prob")[,2]
+length(model.svm.CV.pred.log) # 3221
+head(model.svm.CV.pred.log)
+
+# Plot ROC curve
+set.seed(123)
+model.svm.CV.roc.log <- plot.roc(train.log$y, model.svm.CV.pred.log)
+model.svm.CV.auc.log <- model.svm.CV.roc.log$auc
+model.svm.CV.auc.log # Area under the curve: 0.9879
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.svm.CV.roc.log, col = "steelblue", main = "ROC Curve for log SVM Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.svm.CV.pred2.log <- predict(model.svm.CV.log, newdata = train.log) # no type = "prob"
+dim(model.svm.CV.pred2.log)
+head(model.svm.CV.pred2.log)
+set.seed(123)
+model.svm.CV.cmat.log <- confusionMatrix(model.svm.CV.pred2.log, train.log$y)
+model.svm.CV.cmat.log
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1898   83
+#Spam           60 1180
+
+#Accuracy : 0.9556          
+#95% CI : (0.9479, 0.9625)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : < 2e-16         
+
+#Kappa : 0.9066          
+#Mcnemar's Test P-Value : 0.06581         
+
+#Sensitivity : 0.9694          
+#Specificity : 0.9343          
+#Pos Pred Value : 0.9581          
+#Neg Pred Value : 0.9516          
+#Prevalence : 0.6079          
+#Detection Rate : 0.5893          
+#Detection Prevalence : 0.6150          
+#Balanced Accuracy : 0.9518          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+set.seed(123)
+model.svm.CV.pred.test.log <- predict(model.svm.CV.log, newdata = test.log)
+
+set.seed(123)
+model.svm.CV.cmat.test.log <- confusionMatrix(model.svm.CV.pred.test.log, test.log$y)
+model.svm.CV.cmat.test.log
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      807   52
+#Spam           23  498
+
+#Accuracy : 0.9457         
+#95% CI : (0.9323, 0.957)
+#No Information Rate : 0.6014         
+#P-Value [Acc > NIR] : < 2.2e-16      
+
+#Kappa : 0.8856         
+#Mcnemar's Test P-Value : 0.001224       
+
+#Sensitivity : 0.9723         
+#Specificity : 0.9055         
+#Pos Pred Value : 0.9395         
+#Neg Pred Value : 0.9559         
+#Prevalence : 0.6014         
+#Detection Rate : 0.5848         
+#Detection Prevalence : 0.6225         
+#Balanced Accuracy : 0.9389         
+
+#'Positive' Class : Not_Spam
 
 # -------------------------------------------------------------------------#
 # (4) Random Forest -- rf_random.fit is best
