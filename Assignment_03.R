@@ -308,6 +308,11 @@ dim(test.log) # 1380   58
 # Model Build -- Fit Model Suite
 #######################################################
 
+# Add for each model to calculate processing time and set same seed
+#ptm <- proc.time() # Start the clock!
+#set.seed(123)
+#proc.time() - ptm # Stop the clock
+
 # (1) a logistic regression model using variable selection -- how to determine best model from regsubsets()?
 
 # First set completely naive logistic model without using variable selection
@@ -556,8 +561,6 @@ model.logit.step2.cmat.test
 #'Positive' Class : Not_Spam
 
 
-
-
 ### Do above code using log train and log test sets?
 
 
@@ -711,9 +714,7 @@ model.tree2$finalModel
 fancyRpartPlot(model.tree2$finalModel, sub = "")
 
 
-
 ### Do above code using log train and log test sets?
-
 
 
 # -------------------------------------------------------------------------#
@@ -817,10 +818,10 @@ head(model.svm.CV.pred)
 set.seed(123)
 model.svm.CV.roc <- plot.roc(train$y, model.svm.CV.pred)
 model.svm.CV.auc <- model.svm.CV.roc$auc
-model.svm.CV.auc # Area under the curve: 0.9781
+model.svm.CV.auc # Area under the curve: 0.9857
 
 par(pty = "s") # "s" generates a square plotting region
-plot(model.svm.CV.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+plot(model.svm.CV.roc, col = "steelblue", main = "ROC Curve for SVM Model")
 par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
@@ -831,6 +832,31 @@ head(model.svm.CV.pred2)
 set.seed(123)
 svm.tune.cmat <- confusionMatrix(model.svm.CV.pred2, train$y)
 svm.tune.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1900   92
+#Spam           58 1171
+
+#Accuracy : 0.9534          
+#95% CI : (0.9456, 0.9604)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.9018          
+#Mcnemar's Test P-Value : 0.007051        
+
+#Sensitivity : 0.9704          
+#Specificity : 0.9272          
+#Pos Pred Value : 0.9538          
+#Neg Pred Value : 0.9528          
+#Prevalence : 0.6079          
+#Detection Rate : 0.5899          
+#Detection Prevalence : 0.6184          
+#Balanced Accuracy : 0.9488          
+
+#'Positive' Class : Not_Spam
+
 
 # Predict test
 set.seed(123)
@@ -839,12 +865,34 @@ model.svm.CV.pred.test <- predict(model.svm.CV, newdata = test)
 set.seed(123)
 model.svm.CV.cmat.test <- confusionMatrix(model.svm.CV.pred.test, test$y)
 model.svm.CV.cmat.test
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      803   62
+#Spam           27  488
+
+#Accuracy : 0.9355          
+#95% CI : (0.9212, 0.9479)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.864           
+#Mcnemar's Test P-Value : 0.0003134       
+
+#Sensitivity : 0.9675          
+#Specificity : 0.8873          
+#Pos Pred Value : 0.9283          
+#Neg Pred Value : 0.9476          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5819          
+#Detection Prevalence : 0.6268          
+#Balanced Accuracy : 0.9274          
+
+#'Positive' Class : Not_Spam
 
 
+### Do above code using log train and log test sets?
 
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-proc.time() - ptm # Stop the clock
 
 # -------------------------------------------------------------------------#
 # (4) Random Forest -- rf_random.fit is best
@@ -1115,8 +1163,8 @@ model.rf.cmat.test
 #'Positive' Class : Not_Spam
 
 
-
 ### Do above code using log train and log test sets?
+
 
 #######################################################
 # End
