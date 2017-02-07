@@ -184,10 +184,6 @@ plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
 length(plotsD)
 do.call("grid.arrange", c(plotsD, ncol=3))
 
-#plotsE <- lapply(colnames(data[17:20, 49, 52, 55:56]), plot_vars, data = data)
-#length(plotsE)
-#do.call("grid.arrange", c(plotsE, nrow=2))
-
 # Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
 plot_box <- function (df){
 for (i in 1:57){
@@ -223,22 +219,32 @@ lat.box <- function(variable){
                strip = strip.custom(bg="lightgrey"),
          xlab = paste0(variable))}
 
-plotsA.box <- lapply(colnames(pred.log[c(16,24,52)]), FUN=lat.box)
+plotsA.box <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), lat.box)
 length(plotsA.box)
 do.call("grid.arrange", c(plotsA.box, ncol=3))
 
-bwplot(~ pred.log$money | y, data = pred.log,
-       layout = c(2, 1),
-       par.settings = list(
-         box.umbrella=list(col= "black"), 
-         box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
+plotsB.box <- lapply(colnames(pred.log[1:57]), lat.box)
+length(plotsB.box)
+do.call("grid.arrange", c(plotsB.box, ncol=3))
 
+lat.box2 <- function(variable, df){
+  toPlot = paste0("~ ", variable, " | y")
+  bwplot(as.formula(toPlot), data = df,
+         layout = c(2, 1),
+         par.settings = list(
+           box.umbrella=list(col= "black"), 
+           box.dot=list(col= "black"), 
+           box.rectangle = list(col= "black", fill = "steelblue")),
+         strip = strip.custom(bg="lightgrey"),
+         xlab = paste0(variable))}
 
-#plotsF <- lapply(data[55:57], FUN=plot_box)
-#length(plotsF)
-#do.call("grid.arrange", c(plotsF, ncol=3)) # Error: only 'grobs' allowed in "gList" == how to fix?
+plotsC.box <- lapply(colnames(pred.log[1:9]), lat.box2, pred.log)
+length(plotsC.box)
+do.call("grid.arrange", c(plotsC.box, ncol=3))
+
+plots.report <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), lat.box2, pred.log)
+length(plots.report)
+do.call("grid.arrange", c(plots.report, ncol=3))
 
 #######################################################
 # EDA -- Make sure to talk about a few interesting box plots
