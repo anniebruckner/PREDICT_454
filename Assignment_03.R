@@ -565,7 +565,7 @@ model.logit.step2.cmat.test
 
 
 # -------------------------------------------------------------------------#
-# (2) a tree model
+# (2) a tree model -- model.tree does way better than model.tree2
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.tree <- rpart(y ~ ., data = train)
@@ -708,11 +708,97 @@ control.tree <- trainControl(method = "cv", number = 10, classProbs = T, savePre
 set.seed(123)
 model.tree2 <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#2.955   0.953   4.037 
 
 # Fitting cp = 0.0435 on full training set
 model.tree2$finalModel
 fancyRpartPlot(model.tree2$finalModel, sub = "")
 
+# Predict train
+set.seed(123)
+model.tree2.pred <- predict(model.tree2, newdata = train, 
+                           type = "prob")[,2]
+length(model.tree2.pred) # 3221
+head(model.tree2.pred)
+
+# Plot ROC curve
+set.seed(123)
+model.tree2.roc <- plot.roc(train$y, model.tree2.pred)
+model.tree2.auc <- model.tree2.roc$auc
+model.tree2.auc # Area under the curve: 0.8298
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.tree2.roc, col = "steelblue", main = "ROC Curve for Tree Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.tree2.pred2 <- predict(model.tree2, newdata = train)
+length(model.tree2.pred2) # 3221
+head(model.tree2.pred2) # This shows just Spam or Not_Spam
+
+set.seed(123)
+model.tree2.cmat <- confusionMatrix(model.tree2.pred2, train$y)
+model.tree2.cmatc
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1818  345
+#Spam          140  918
+
+#Accuracy : 0.8494          
+#95% CI : (0.8366, 0.8616)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.6748          
+#Mcnemar's Test P-Value : < 2.2e-16       
+
+#Sensitivity : 0.9285          
+#Specificity : 0.7268          
+#Pos Pred Value : 0.8405          
+#Neg Pred Value : 0.8677          
+#Prevalence : 0.6079          
+#Detection Rate : 0.5644          
+#Detection Prevalence : 0.6715          
+#Balanced Accuracy : 0.8277          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+set.seed(123)
+model.tree2.pred.test <- predict(model.tree2, newdata = test)
+length(model.tree2.pred.test) # 3221
+head(model.tree2.pred.test) # This shows just Spam or Not_Spam
+
+set.seed(123)
+model.tree2.cmat.test <- confusionMatrix(model.tree2.pred.test, test$y)
+model.tree2.cmat.test
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      783  156
+#Spam           47  394
+
+#Accuracy : 0.8529          
+#95% CI : (0.8331, 0.8712)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.6826          
+#Mcnemar's Test P-Value : 3.453e-14       
+
+#Sensitivity : 0.9434          
+#Specificity : 0.7164          
+#Pos Pred Value : 0.8339          
+#Neg Pred Value : 0.8934          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5674          
+#Detection Prevalence : 0.6804          
+#Balanced Accuracy : 0.8299          
+
+#'Positive' Class : Not_Spam
 
 ### Do above code using log train and log test sets?
 
