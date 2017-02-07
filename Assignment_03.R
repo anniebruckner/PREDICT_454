@@ -718,18 +718,33 @@ fancyRpartPlot(model.tree2$finalModel, sub = "")
 
 # -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
-# Model A
+# Model using svm()
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-model.svm <- svm(y~., data=train, kernel ="linear", cost =1)
+model.svm <- svm(y~., data=train, kernel ="linear")
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#1.675   0.047   1.723 
 summary(model.svm)
-plot(model.svm , train$y)
 
+#Parameters:
+#  SVM-Type:  C-classification 
+#SVM-Kernel:  linear 
+#cost:  1 
+#gamma:  0.01754386 
+#Number of Support Vectors:  678
+#( 326 352 )
+#Number of Classes:  2 
+#Levels: 
+#  Not_Spam Spam
+
+# Tune the model
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
 proc.time() - ptm # Stop the clock
+#   user  system elapsed 
+#120.986   2.206 123.570
 svm.tune$best.model
 #Parameters:
 #  SVM-Type:  C-classification 
@@ -754,7 +769,47 @@ summary(svm.tune)
 #6 1e+01 0.06612695 0.008272670
 #7 1e+02 0.07916851 0.009176701
 
-# Model B
+
+# Predict train
+set.seed(123)
+svm.tune.pred <- predict(svm.tune, newdata = train, 
+                                  type = "prob")[,2]
+length(svm.tune.pred) # 3221
+head(svm.tune.pred)
+
+# Plot ROC curve
+set.seed(123)
+svm.tune.roc <- plot.roc(train$y, svm.tune.pred)
+svm.tune.auc <- msvm.tune.roc$auc
+svm.tune.auc # Area under the curve: 0.9781
+
+par(pty = "s") # "s" generates a square plotting region
+plot(svm.tune.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+svm.tune.pred2 <- predict(svm.tune, newdata = train) # no type = "prob"
+dim(svm.tune.pred2)
+head(svm.tune.pred2)
+set.seed(123)
+svm.tune.cmat <- confusionMatrix(svm.tune.pred2, train$y)
+svm.tune.cmat
+
+# Predict test
+set.seed(123)
+svm.tune.pred.test <- predict(svm.tune, newdata = test)
+
+set.seed(123)
+svm.tune.cmat.test <- confusionMatrix(svm.tune.pred.test, test$y)
+svm.tune.cmat.test
+
+
+
+
+
+
+# Model using train()
 ptm <- proc.time() # Start the clock!
 svm.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
 #names(getModelInfo())
@@ -1112,66 +1167,23 @@ model.rf.cmat.test
 
 
 
+### Do above code using log train and log test sets?
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ptm <- proc.time() # Start the clock!
-#rf.control.cv <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-#proc.time() - ptm # Stop the clock
-
-#ptm <- proc.time() # Start the clock!
-#set.seed(123)
-#model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cv)
-#proc.time() - ptm # Stop the clock
-#Fitting mtry = 29 on full training set
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#--------#
-# Code for one lattice boxplot
-crla <- bwplot(~ capital_run_length_average | y, data = data,
-       layout = c(2, 1),
-       par.settings = list(
-         box.umbrella=list(col= "black"), 
-         box.dot=list(col= "black"), 
-         box.rectangle = list(col= "black", fill = "steelblue")),
-       strip = strip.custom(bg="lightgrey"))
-class(crla)
+#######################################################
+# End
+#######################################################
 
 #--------# Discard #--------#
+# Code for one lattice boxplot
+crla <- bwplot(~ capital_run_length_average | y, data = data,
+               layout = c(2, 1),
+               par.settings = list(
+                 box.umbrella=list(col= "black"), 
+                 box.dot=list(col= "black"), 
+                 box.rectangle = list(col= "black", fill = "steelblue")),
+               strip = strip.custom(bg="lightgrey"))
+class(crla)
+
 install.packages("bestglm")
 library(bestglm)
 res.best.logistic <- bestglm(Xy = train, 
@@ -1213,7 +1225,6 @@ do.call("grid.arrange", c(plotsA.box, ncol=3))
 plotsB.box <- lapply(colnames(pred.log[1:57]), lat.box)
 length(plotsB.box)
 do.call("grid.arrange", c(plotsB.box, ncol=3))
-
 
 
 # Create ROC curve
@@ -1412,6 +1423,14 @@ summary(model.tree.pred2.binary$y)
 #2067     1154
 #######
 
+#ptm <- proc.time() # Start the clock!
+#rf.control.cv <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+#proc.time() - ptm # Stop the clock
 
+#ptm <- proc.time() # Start the clock!
+#set.seed(123)
+#model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cv)
+#proc.time() - ptm # Stop the clock
+#Fitting mtry = 29 on full training set
 
 
