@@ -718,96 +718,7 @@ fancyRpartPlot(model.tree2$finalModel, sub = "")
 
 # -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
-# Model using svm()
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-model.svm <- svm(y~., data=train, kernel ="linear")
-proc.time() - ptm # Stop the clock
-#user  system elapsed 
-#1.675   0.047   1.723 
-summary(model.svm)
-
-#Parameters:
-#  SVM-Type:  C-classification 
-#SVM-Kernel:  linear 
-#cost:  1 
-#gamma:  0.01754386 
-#Number of Support Vectors:  678
-#( 326 352 )
-#Number of Classes:  2 
-#Levels: 
-#  Not_Spam Spam
-
-# Tune the model
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
-proc.time() - ptm # Stop the clock
-#   user  system elapsed 
-#120.986   2.206 123.570
-svm.tune$best.model
-#Parameters:
-#  SVM-Type:  C-classification 
-#SVM-Kernel:  radial 
-#cost:  5 
-#gamma:  0.01754386 
-#Number of Support Vectors:  828
-
-summary(svm.tune)
-#Parameter tuning of ‘svm’:
-#- sampling method: 10-fold cross validation 
-#- best parameters:
-# cost: 5
-#- best performance: 0.06612599 
-#- Detailed performance results:
-#  cost      error  dispersion
-#1 1e-03 0.39212834 0.031195773
-#2 1e-02 0.32568506 0.035421299
-#3 1e-01 0.09934908 0.013102509
-#4 1e+00 0.07326693 0.010143842
-#5 5e+00 0.06612599 0.009470988
-#6 1e+01 0.06612695 0.008272670
-#7 1e+02 0.07916851 0.009176701
-
-
-# Predict train
-set.seed(123)
-svm.tune.pred <- predict(svm.tune, newdata = train, 
-                                  type = "prob")[,2]
-length(svm.tune.pred) # 3221
-head(svm.tune.pred)
-
-# Plot ROC curve
-set.seed(123)
-svm.tune.roc <- plot.roc(train$y, svm.tune.pred)
-svm.tune.auc <- msvm.tune.roc$auc
-svm.tune.auc # Area under the curve: 0.9781
-
-par(pty = "s") # "s" generates a square plotting region
-plot(svm.tune.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
-par(pty = "m") # "m" generates the maximal plotting region
-
-# Predict train for confusion matrix
-set.seed(123)
-svm.tune.pred2 <- predict(svm.tune, newdata = train) # no type = "prob"
-dim(svm.tune.pred2)
-head(svm.tune.pred2)
-set.seed(123)
-svm.tune.cmat <- confusionMatrix(svm.tune.pred2, train$y)
-svm.tune.cmat
-
-# Predict test
-set.seed(123)
-svm.tune.pred.test <- predict(svm.tune, newdata = test)
-
-set.seed(123)
-svm.tune.cmat.test <- confusionMatrix(svm.tune.pred.test, test$y)
-svm.tune.cmat.test
-
-
-
-
-
+# Wasn't sure how to create prediction from model using svm()
 
 # Model using train()
 ptm <- proc.time() # Start the clock!
@@ -892,6 +803,42 @@ model.svm.CV$finalModel
 #Objective Function Value : -603.77 
 #Training error : 0.044396 
 #Probability model included. 
+
+# Predict train
+set.seed(123)
+model.svm.pred <- predict(model.svm, newdata = train, 
+                          type = "prob")[,2]
+length(model.svm.pred) # 3221
+head(model.svm.pred)
+
+# Plot ROC curve
+set.seed(123)
+svm.tune.roc <- plot.roc(train$y, svm.tune.pred)
+svm.tune.auc <- msvm.tune.roc$auc
+svm.tune.auc # Area under the curve: 0.9781
+
+par(pty = "s") # "s" generates a square plotting region
+plot(svm.tune.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+svm.tune.pred2 <- predict(svm.tune, newdata = train) # no type = "prob"
+dim(svm.tune.pred2)
+head(svm.tune.pred2)
+set.seed(123)
+svm.tune.cmat <- confusionMatrix(svm.tune.pred2, train$y)
+svm.tune.cmat
+
+# Predict test
+set.seed(123)
+svm.tune.pred.test <- predict(svm.tune, newdata = test)
+
+set.seed(123)
+svm.tune.cmat.test <- confusionMatrix(svm.tune.pred.test, test$y)
+svm.tune.cmat.test
+
+
 
 ptm <- proc.time() # Start the clock!
 set.seed(123)
@@ -1433,4 +1380,87 @@ summary(model.tree.pred2.binary$y)
 #proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+model.svm <- svm(y~., data=train, kernel ="linear")
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#1.675   0.047   1.723 
+summary(model.svm)
 
+#Parameters:
+#  SVM-Type:  C-classification 
+#SVM-Kernel:  linear 
+#cost:  1 
+#gamma:  0.01754386 
+#Number of Support Vectors:  678
+#( 326 352 )
+#Number of Classes:  2 
+#Levels: 
+#  Not_Spam Spam
+
+# Tune the model
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+proc.time() - ptm # Stop the clock
+#   user  system elapsed 
+#120.986   2.206 123.570
+svm.tune$best.model
+#Parameters:
+#  SVM-Type:  C-classification 
+#SVM-Kernel:  radial 
+#cost:  5 
+#gamma:  0.01754386 
+#Number of Support Vectors:  828
+
+summary(svm.tune)
+#Parameter tuning of ‘svm’:
+#- sampling method: 10-fold cross validation 
+#- best parameters:
+# cost: 5
+#- best performance: 0.06612599 
+#- Detailed performance results:
+#  cost      error  dispersion
+#1 1e-03 0.39212834 0.031195773
+#2 1e-02 0.32568506 0.035421299
+#3 1e-01 0.09934908 0.013102509
+#4 1e+00 0.07326693 0.010143842
+#5 5e+00 0.06612599 0.009470988
+#6 1e+01 0.06612695 0.008272670
+#7 1e+02 0.07916851 0.009176701
+
+
+# Predict train
+set.seed(123)
+model.svm.pred <- predict(model.svm, newdata = train, 
+                          type = "prob")[,2]
+length(model.svm.pred) # 3221
+head(model.svm.pred)
+
+# Plot ROC curve
+set.seed(123)
+svm.tune.roc <- plot.roc(train$y, svm.tune.pred)
+svm.tune.auc <- msvm.tune.roc$auc
+svm.tune.auc # Area under the curve: 0.9781
+
+par(pty = "s") # "s" generates a square plotting region
+plot(svm.tune.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+svm.tune.pred2 <- predict(svm.tune, newdata = train) # no type = "prob"
+dim(svm.tune.pred2)
+head(svm.tune.pred2)
+set.seed(123)
+svm.tune.cmat <- confusionMatrix(svm.tune.pred2, train$y)
+svm.tune.cmat
+
+# Predict test
+set.seed(123)
+svm.tune.pred.test <- predict(svm.tune, newdata = test)
+
+set.seed(123)
+svm.tune.cmat.test <- confusionMatrix(svm.tune.pred.test, test$y)
+svm.tune.cmat.test
