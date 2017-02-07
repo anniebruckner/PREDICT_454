@@ -333,10 +333,10 @@ model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
 options(max.print=1000000)
 summary(model.logit.step)
 
-# Stepwise train
-model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
+# All Subsets train
+model.logit.allsub <- regsubsets(y ~ ., data = train, nvmax=NULL, method="exhaustive", really.big = TRUE)
 options(max.print=1000000)
-summary(model.logit.step)
+summary(model.logit.allsub)
 
 # Model C
 logit.control <- trainControl(classProbs = T, savePred = T , verboseIter = T)
