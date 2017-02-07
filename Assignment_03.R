@@ -330,8 +330,8 @@ names(model.logit.bwd) # Is there a metric that lets me see which is best?
 #model.logit.bwd$rss[58] # 330.9772
 #plot(model.logit.bwd, scale="bic")
 
-args(bestglm)
-bestglm(train, IC = "AIC", method = "backward")
+#args(bestglm)
+#bestglm(train, IC = "AIC", method = "backward")
 
 # Forward train
 set.seed(123)
@@ -367,7 +367,7 @@ model.logit.step.fit$finalModel
 #Null Deviance:	    4314 
 #Residual Deviance: 1949 	AIC: 1971
 
-# Model using top 15 predictors from Stepwise -- left out glm and using family=binomial("logit")
+# Model using top 15 predictors from Stepwise -- same as model.logit.step.fit even though left out glm and using family=binomial("logit")
 set.seed(123)
 model.logit.step.fit2 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
 summary(model.logit.step.fit2)
@@ -896,7 +896,7 @@ print(rf_random)
 #Accuracy was used to select the optimal model using  the largest value.
 #The final value used for the model was mtry = 11.
 
-#plot(rf_random)
+plot(rf_random)
 
 # Fit rf_random--performs only slightly better than base model
 ptm <- proc.time() # Start the clock!
