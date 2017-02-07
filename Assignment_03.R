@@ -563,6 +563,64 @@ model.logit.step2.cmat.test
 
 ### Do above code using log train and log test sets?
 
+#--------# Using train and test log of predictors #--------#
+
+ptm <- proc.time() # Start the clock!
+logit.control.log <- trainControl(classProbs = T, savePred = T , verboseIter = T)
+set.seed(123)
+model.logit.step2.log <- train(y ~ ., data = train.log, method = "glmStepAIC",
+                           direction = "forward", trControl = logit.control.log)
+proc.time() - ptm # Stop the clock
+
+names(model.logit.step2.log)
+model.logit.step2.log$finalModel
+summary(model.logit.step2.log$finalModel)
+
+length(model.logit.step2.log$finalModel$coefficients)-1 # find number of predictors used: 37
+AIC(model.logit.step2.log$finalModel) # 1330.207
+head(model.logit.step2.log$pred)
+model.logit.step2.log$metric # Accuracy
+head(model.logit.step2.log$results)
+
+# Predict train
+set.seed(123)
+model.logit.step2.pred.log <- predict(model.logit.step2.log, newdata = train.log, 
+                                  type = "prob")[,2]
+length(model.logit.step2.pred.log) # 3221
+head(model.logit.step2.pred.log)
+
+# Plot ROC curve
+set.seed(123)
+model.logit.step2.roc.log <- plot.roc(train.log$y, model.logit.step2.pred.log)
+model.logit.step2.auc.log <- model.logit.step2.roc.log$auc
+model.logit.step2.auc.log # Area under the curve: 0.9781
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.logit.step2.roc.log, col = "steelblue", main = "ROC Curve for log Stepwise Logistic Regression Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.logit.step2.pred2.log <- predict(model.logit.step2.log, newdata = train.log) # no type = "prob"
+dim(model.logit.step2.pred2.log)
+head(model.logit.step2.pred2.log)
+set.seed(123)
+model.logit.step2.cmat.log <- confusionMatrix(model.logit.step2.pred2.log, train.log$y)
+model.logit.step2.cmat.log
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+
+# Predict test
+set.seed(123)
+model.logit.step2.pred.test.log <- predict(model.logit.step2.log, newdata = test.log)
+
+set.seed(123)
+model.logit.step2.cmat.test.log <- confusionMatrix(model.logit.step2.pred.test.log, test.log$y)
+model.logit.step2.cmat.test.log
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
 
 # -------------------------------------------------------------------------#
 # (2) a tree model -- model.tree does way better than model.tree2
@@ -1556,7 +1614,8 @@ model.rf.cmat.test
 
 ### Do above code using log train and log test sets?
 #--------# Using train and test log of predictors #--------#
-# Create matrix
+
+# Create log matrix
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 train.matrix.log  <- model.matrix(y ~ ., data=train.log)[,-58] # create predictor matrix (subtract last column, the response variable)
