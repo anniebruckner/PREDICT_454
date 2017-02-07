@@ -728,6 +728,8 @@ set.seed(123)
 model.svm.CV <- train(y ~ ., data = train, method = "svmRadial", # or svmRadialWeights? -- same results
                     trControl = svm.control) # metric="ROC" doesn't do anything for this model
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#56.205   3.504  59.877
 
 #+ Fold01: sigma=0.02897, C=0.25 
 #- Fold01: sigma=0.02897, C=0.25 
@@ -806,37 +808,37 @@ model.svm.CV$finalModel
 
 # Predict train
 set.seed(123)
-model.svm.pred <- predict(model.svm, newdata = train, 
+model.svm.CV.pred <- predict(model.svm.CV, newdata = train, 
                           type = "prob")[,2]
-length(model.svm.pred) # 3221
-head(model.svm.pred)
+length(model.svm.CV.pred) # 3221
+head(model.svm.CV.pred)
 
 # Plot ROC curve
 set.seed(123)
-svm.tune.roc <- plot.roc(train$y, svm.tune.pred)
-svm.tune.auc <- msvm.tune.roc$auc
-svm.tune.auc # Area under the curve: 0.9781
+model.svm.CV.roc <- plot.roc(train$y, model.svm.CV.pred)
+model.svm.CV.auc <- model.svm.CV.roc$auc
+model.svm.CV.auc # Area under the curve: 0.9781
 
 par(pty = "s") # "s" generates a square plotting region
-plot(svm.tune.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+plot(model.svm.CV.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
 par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
 set.seed(123)
-svm.tune.pred2 <- predict(svm.tune, newdata = train) # no type = "prob"
-dim(svm.tune.pred2)
-head(svm.tune.pred2)
+model.svm.CV.pred2 <- predict(model.svm.CV, newdata = train) # no type = "prob"
+dim(model.svm.CV.pred2)
+head(model.svm.CV.pred2)
 set.seed(123)
-svm.tune.cmat <- confusionMatrix(svm.tune.pred2, train$y)
+svm.tune.cmat <- confusionMatrix(model.svm.CV.pred2, train$y)
 svm.tune.cmat
 
 # Predict test
 set.seed(123)
-svm.tune.pred.test <- predict(svm.tune, newdata = test)
+model.svm.CV.pred.test <- predict(model.svm.CV, newdata = test)
 
 set.seed(123)
-svm.tune.cmat.test <- confusionMatrix(svm.tune.pred.test, test$y)
-svm.tune.cmat.test
+model.svm.CV.cmat.test <- confusionMatrix(model.svm.CV.pred.test, test$y)
+model.svm.CV.cmat.test
 
 
 
