@@ -773,7 +773,36 @@ ptm <- proc.time() # Start the clock!
 set.seed(123)
 rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", trControl=control.rf) # removed tuneLength=15
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#893.115   9.903 903.818 
+
 print(rf_random)
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+
+#  mtry  Accuracy   Kappa    
+#11    0.9509428  0.8966325
+#33    0.9477356  0.8899661
+#56    0.9460780  0.8864958
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 11.
+
+
+
+
+
+
+
+
+
+
 #3221 samples
 #57 predictor
 #2 classes: 'Not_Spam', 'Spam'
@@ -842,7 +871,7 @@ model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cvr
 #Fitting mtry = 29 on full training set
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#893.115   9.903 903.818 
+#920.585   7.467 928.652
 
 # Predict train
 set.seed(123)
