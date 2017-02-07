@@ -833,23 +833,134 @@ proc.time() - ptm # Stop the clock
 
 # RF train using train()
 ptm <- proc.time() # Start the clock!
-rf.control.cv <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-proc.time() - ptm # Stop the clock
-
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cv)
-proc.time() - ptm # Stop the clock
-#Fitting mtry = 29 on full training set
-
-ptm <- proc.time() # Start the clock!
 rf.control.cvr <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
 proc.time() - ptm # Stop the clock
 
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cvr)
+#Fitting mtry = 29 on full training set
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#893.115   9.903 903.818 
+
+# Predict train
+set.seed(123)
+model.rf.pred <- predict(model.rf, newdata = train, 
+                                  type = "prob")[,2]
+length(model.rf.pred) # 3221
+head(model.rf.pred)
+
+# Plot ROC curve
+set.seed(123)
+model.rf.roc <- plot.roc(train$y, model.rf.pred)
+model.rf.auc <- model.rf.roc$auc
+model.rf.auc # Area under the curve: 1
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.rf.roc, col = "steelblue", main = "ROC Curve for Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.rf.pred2 <- predict(model.rf, newdata = train) # no type = "prob"
+dim(model.rf.pred2)
+head(model.rf.pred2)
+set.seed(123)
+model.rf.cmat <- confusionMatrix(model.rf.pred2, train$y)
+model.rf.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    1
+#Spam            1 1262
+
+#Accuracy : 0.9994          
+#95% CI : (0.9978, 0.9999)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : <2e-16          
+
+#Kappa : 0.9987          
+#Mcnemar's Test P-Value : 1               
+
+#Sensitivity : 0.9995          
+#Specificity : 0.9992          
+#Pos Pred Value : 0.9995          
+#Neg Pred Value : 0.9992          
+#Prevalence : 0.6079          
+#Detection Rate : 0.6076          
+#Detection Prevalence : 0.6079          
+#Balanced Accuracy : 0.9993          
+
+#'Positive' Class : Not_Spam 
+
+# Predict test
+set.seed(123)
+model.rf.pred.test <- predict(model.rf, newdata = test)
+
+set.seed(123)
+model.rf.cmat.test <- confusionMatrix(model.rf.pred.test, test$y)
+model.rf.cmat.test
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      805   58
+#Spam           25  492
+
+#Accuracy : 0.9399         
+#95% CI : (0.926, 0.9518)
+#No Information Rate : 0.6014         
+#P-Value [Acc > NIR] : < 2.2e-16      
+
+#Kappa : 0.8733         
+#Mcnemar's Test P-Value : 0.000444       
+
+#Sensitivity : 0.9699         
+#Specificity : 0.8945         
+#Pos Pred Value : 0.9328         
+#Neg Pred Value : 0.9516         
+#Prevalence : 0.6014         
+#Detection Rate : 0.5833         
+#Detection Prevalence : 0.6254         
+#Balanced Accuracy : 0.9322         
+
+#'Positive' Class : Not_Spam
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ptm <- proc.time() # Start the clock!
+#rf.control.cv <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+#proc.time() - ptm # Stop the clock
+
+#ptm <- proc.time() # Start the clock!
+#set.seed(123)
+#model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cv)
+#proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
 
