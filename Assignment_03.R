@@ -800,7 +800,119 @@ model.tree2.cmat.test
 
 #'Positive' Class : Not_Spam
 
-### Do above code using log train and log test sets?
+#--------# Using train and test log of predictors #--------# 
+
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+model.tree.log <- rpart(y ~ ., data = train.log)
+model.tree.log
+proc.time() - ptm # Stop the clock
+
+dev.new(width=10, height=8) # This fixes the tiny font issue
+model.tree_plot.log <- fancyRpartPlot(model.tree.log, sub = "") # The font is very small without the above code
+dev.off()
+
+# Predict train
+set.seed(123)
+model.tree.pred.log <- predict(model.tree.log, newdata = train.log, 
+                           type = "prob")[,2]
+length(model.tree.pred.log) # 3221
+head(model.tree.pred.log)
+
+# Plot ROC curve
+set.seed(123)
+model.tree.roc.log <- plot.roc(train.log$y, model.tree.pred.log)
+model.tree.auc.log <- model.tree.roc.log$auc
+model.tree.auc.log # Area under the curve: 0.9223
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.tree.roc.log, col = "steelblue", main = "ROC Curve for Tree Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.tree.pred2.log <- predict(model.tree.log, newdata = train.log)
+length(model.tree.pred2.log) # 3221
+head(model.tree.pred2.log) # This needs to show just Spam or Not_Spam--shows matrix with probabilities of each prediction
+#######
+# Make predictions just Spam or Not_Spam
+model.tree.pred2.binary.log <- data.frame(model.tree.pred2.log)
+
+model.tree.pred2.binary.log$y <- NA
+head(model.tree.pred2.binary.log)
+model.tree.pred2.binary.log[,1]
+
+# Convert to factor
+model.tree.pred2.binary.log$y <- as.factor(model.tree.pred2.binary.log$y)
+levels(model.tree.pred2.binary.log$y) <- c("Not_Spam", "Spam")
+summary(model.tree.pred2.binary.log$y)
+
+for (i in 1:nrow(model.tree.pred2.binary.log)){
+  model.tree.pred2.binary.log[i,3] <- ifelse(model.tree.pred2.binary.log[i,1] > model.tree.pred2.binary.log[i,2], "Not_Spam", "Spam")
+}
+
+head(model.tree.pred2.binary.log)
+summary(model.tree.pred2.binary.log$y)
+#Not_Spam     Spam 
+#2067     1154
+#######
+set.seed(123)
+model.tree.cmat.log <- confusionMatrix(model.tree.pred2.binary.log$y, train.log$y)
+model.tree.cmat.log
+
+# Predict test
+set.seed(123)
+model.tree.pred.test <- predict(model.tree, newdata = test)
+length(model.tree.pred.test) # 3221
+head(model.tree.pred.test) # This needs to show just Spam or Not_Spam
+#######
+# Make predictions just Spam or Not_Spam
+model.tree.pred.test.binary <- data.frame(model.tree.pred.test)
+
+model.tree.pred.test.binary$y <- NA
+head(model.tree.pred.test.binary)
+
+# Convert to factor
+model.tree.pred.test.binary$y <- as.factor(model.tree.pred.test.binary$y)
+levels(model.tree.pred.test.binary$y) <- c("Not_Spam", "Spam")
+summary(model.tree.pred.test.binary$y)
+
+for (i in 1:nrow(model.tree.pred.test.binary)){
+  model.tree.pred.test.binary[i,3] <- ifelse(model.tree.pred.test.binary[i,1] > model.tree.pred.test.binary[i,2], "Not_Spam", "Spam")
+}
+
+head(model.tree.pred.test.binary)
+summary(model.tree.pred.test.binary$y)
+#Not_Spam     Spam 
+#895      485
+#######
+set.seed(123)
+model.tree.cmat.test <- confusionMatrix(model.tree.pred.test.binary$y, test$y)
+model.tree.cmat.test
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      794  101
+#Spam           36  449
+
+#Accuracy : 0.9007         
+#95% CI : (0.8837, 0.916)
+#No Information Rate : 0.6014         
+#P-Value [Acc > NIR] : < 2.2e-16      
+
+#Kappa : 0.7887         
+#Mcnemar's Test P-Value : 4.554e-08      
+
+#Sensitivity : 0.9566         
+#Specificity : 0.8164         
+#Pos Pred Value : 0.8872         
+#Neg Pred Value : 0.9258         
+#Prevalence : 0.6014         
+#Detection Rate : 0.5754         
+#Detection Prevalence : 0.6486         
+#Balanced Accuracy : 0.8865         
+
+#'Positive' Class : Not_Spam
+
 
 
 # -------------------------------------------------------------------------#
