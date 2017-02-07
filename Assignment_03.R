@@ -595,23 +595,8 @@ set.seed(123)
 model.tree.pred2 <- predict(model.tree, newdata = train)
 length(model.tree.pred2) # 3221
 head(model.tree.pred2) # This needs to show just Spam or Not_Spam--shows matrix with probabilities of each prediction
-set.seed(123)
-model.tree.cmat <- confusionMatrix(model.tree.pred2, train$y)
-model.tree.cmat
-#Error in confusionMatrix.default(model.tree.pred.test, test$y) : 
-#  the data cannot have more levels than the reference
-
-# Predict test
-set.seed(123)
-model.tree.pred.test <- predict(model.tree, newdata = test)
-length(model.tree.pred.test) # 3221
-head(model.tree.pred.test) # This needs to show just Spam or Not_Spam
-set.seed(123)
-model.tree.cmat.test <- confusionMatrix(model.tree.pred.test, test$y)
-model.tree.cmat.test
-
 #######
-
+# Make predictions just Spam or Not_Spam
 model.tree.pred2.binary <- data.frame(model.tree.pred2)
 
 model.tree.pred2.binary$y <- NA
@@ -625,24 +610,98 @@ summary(model.tree.pred2.binary$y)
 
 for (i in 1:nrow(model.tree.pred2.binary)){
   model.tree.pred2.binary[i,3] <- ifelse(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], "Not_Spam", "Spam")
-   }
-
-#if else(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], model.tree.pred2.binary[i,3]=="0", model.tree.pred2.binary[i,3]=="1")}
+}
 
 head(model.tree.pred2.binary)
 summary(model.tree.pred2.binary$y)
 #Not_Spam     Spam 
 #2067     1154
+#######
+set.seed(123)
+model.tree.cmat <- confusionMatrix(model.tree.pred2.binary$y, train$y)
+model.tree.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1873  194
+#Spam           85 1069
+
+#Accuracy : 0.9134          
+#95% CI : (0.9031, 0.9229)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8155          
+#Mcnemar's Test P-Value : 1.008e-10       
+
+#Sensitivity : 0.9566          
+#Specificity : 0.8464          
+#Pos Pred Value : 0.9061          
+#Neg Pred Value : 0.9263          
+#Prevalence : 0.6079          
+#Detection Rate : 0.5815          
+#Detection Prevalence : 0.6417          
+#Balanced Accuracy : 0.9015          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+set.seed(123)
+model.tree.pred.test <- predict(model.tree, newdata = test)
+length(model.tree.pred.test) # 3221
+head(model.tree.pred.test) # This needs to show just Spam or Not_Spam
+#######
+# Make predictions just Spam or Not_Spam
+model.tree.pred.test.binary <- data.frame(model.tree.pred.test)
+
+model.tree.pred.test.binary$y <- NA
+head(model.tree.pred.test.binary)
+
+# Convert to factor
+model.tree.pred.test.binary$y <- as.factor(model.tree.pred.test.binary$y)
+levels(model.tree.pred.test.binary$y) <- c("Not_Spam", "Spam")
+summary(model.tree.pred.test.binary$y)
+
+for (i in 1:nrow(model.tree.pred.test.binary)){
+  model.tree.pred.test.binary[i,3] <- ifelse(model.tree.pred.test.binary[i,1] > model.tree.pred.test.binary[i,2], "Not_Spam", "Spam")
+}
+
+head(model.tree.pred.test.binary)
+summary(model.tree.pred.test.binary$y)
+#Not_Spam     Spam 
+#895      485
+#######
+set.seed(123)
+model.tree.cmat.test <- confusionMatrix(model.tree.pred.test.binary$y, test$y)
+model.tree.cmat.test
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      794  101
+#Spam           36  449
+
+#Accuracy : 0.9007         
+#95% CI : (0.8837, 0.916)
+#No Information Rate : 0.6014         
+#P-Value [Acc > NIR] : < 2.2e-16      
+
+#Kappa : 0.7887         
+#Mcnemar's Test P-Value : 4.554e-08      
+
+#Sensitivity : 0.9566         
+#Specificity : 0.8164         
+#Pos Pred Value : 0.8872         
+#Neg Pred Value : 0.9258         
+#Prevalence : 0.6014         
+#Detection Rate : 0.5754         
+#Detection Prevalence : 0.6486         
+#Balanced Accuracy : 0.8865         
+
+#'Positive' Class : Not_Spam
 
 
-#####
-
-
-
-
-# Model tree with 10-fold CV x 3
+# Model tree with train() 10-fold CV x 3
 ptm <- proc.time() # Start the clock!
-control.tree <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+control.tree <- trainControl(method = "cv", number = 10, classProbs = T, savePred = T, verboseIter = T)
 set.seed(123)
 model.tree2 <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
 proc.time() - ptm # Stop the clock
@@ -650,6 +709,12 @@ proc.time() - ptm # Stop the clock
 # Fitting cp = 0.0435 on full training set
 model.tree2$finalModel
 fancyRpartPlot(model.tree2$finalModel, sub = "")
+
+
+
+### Do above code using log train and log test sets?
+
+
 
 # -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
@@ -1322,6 +1387,31 @@ f1.score(train, train$y, model.logit.step2.pred) # NaN
 #         Not_Spam Spam class.error
 #Not_Spam     1901   57  0.02911134
 #Spam           96 1167  0.07600950
+
+#if else(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], model.tree.pred2.binary[i,3]=="0", model.tree.pred2.binary[i,3]=="1")}
+
+#######
+model.tree.pred2.binary <- data.frame(model.tree.pred2)
+
+model.tree.pred2.binary$y <- NA
+head(model.tree.pred2.binary)
+model.tree.pred2.binary[,1]
+
+# Convert to factor
+model.tree.pred2.binary$y <- as.factor(model.tree.pred2.binary$y)
+levels(model.tree.pred2.binary$y) <- c("Not_Spam", "Spam")
+summary(model.tree.pred2.binary$y)
+
+for (i in 1:nrow(model.tree.pred2.binary)){
+  model.tree.pred2.binary[i,3] <- ifelse(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], "Not_Spam", "Spam")
+}
+
+head(model.tree.pred2.binary)
+summary(model.tree.pred2.binary$y)
+#Not_Spam     Spam 
+#2067     1154
+#######
+
 
 
 
