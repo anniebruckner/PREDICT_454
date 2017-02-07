@@ -614,22 +614,25 @@ model.tree.cmat.test
 
 model.tree.pred2.binary <- data.frame(model.tree.pred2)
 
-model.tree.pred2.binary$y <- 0
+model.tree.pred2.binary$y <- NA
 head(model.tree.pred2.binary)
 model.tree.pred2.binary[,1]
 
 # Convert to factor
 model.tree.pred2.binary$y <- as.factor(model.tree.pred2.binary$y)
+levels(model.tree.pred2.binary$y) <- c("Not_Spam", "Spam")
+summary(model.tree.pred2.binary$y)
 
 for (i in 1:nrow(model.tree.pred2.binary)){
-  model.tree.pred2.binary[i,3]<- ifelse(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], "Not_Spam", "Spam")
+  model.tree.pred2.binary[i,3] <- ifelse(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], "Not_Spam", "Spam")
    }
-      if else(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], model.tree.pred2.binary[i,3]=="0", model.tree.pred2.binary[i,3]=="1")}
+
+#if else(model.tree.pred2.binary[i,1] > model.tree.pred2.binary[i,2], model.tree.pred2.binary[i,3]=="0", model.tree.pred2.binary[i,3]=="1")}
 
 head(model.tree.pred2.binary)
 summary(model.tree.pred2.binary$y)
-
-model.tree.pred2.binary$y <- data.frame(y=ifelse(model.tree.pred2.binary$Not_Spam > model.tree.pred2.binary$Not_Spam, "Not_Spam", "Spam"))
+#Not_Spam     Spam 
+#2067     1154
 
 
 #####
