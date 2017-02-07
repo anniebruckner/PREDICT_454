@@ -40,7 +40,8 @@ list.of.packages <- c("doBy"
                       ,"caret"
                       ,"plyr"
                       ,"dplyr"
-                      ,"car")
+                      ,"car"
+                      ,"pROC")
 
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -323,6 +324,7 @@ summary(model.logit.bwd)
 names(model.logit.bwd) # Is there a metric that lets me see which is best?
 #which.min(model.logit.bwd$rss) # 58 
 #model.logit.bwd$rss[58] # 330.9772
+#plot(model.logit.bwd, scale="bic")
 
 # Forward train
 set.seed(123)
@@ -342,7 +344,50 @@ model.logit.allsub <- regsubsets(y ~ ., data = train, nvmax=NULL, method="exhaus
 options(max.print=1000000)
 summary(model.logit.allsub)
 
-# Method using train() on train -- long process time
+# Model using top 15 predictors from Stepwise
+set.seed(123)
+model.logit.step.fit <- train(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, method="glm", family="binomial")
+model.logit.step.fit$finalModel
+#Coefficients:
+#  (Intercept)            word_freq_your             word_freq_000          word_freq_remove  
+#-2.093421                  0.336930                  3.336319                  3.345913  
+#word_freq_free  capital_run_length_total           word_freq_money     char_freq_exclamation  
+#0.868948                  0.001193                  2.260708                  0.591771  
+#word_freq_our              word_freq_hp             char_freq_usd  
+#0.549758                 -3.260988                  5.444820  
+
+#Degrees of Freedom: 3220 Total (i.e. Null);  3210 Residual
+#Null Deviance:	    4314 
+#Residual Deviance: 1949 	AIC: 1971
+
+# Model using top 15 predictors from Stepwise -- left out glm and using family=binomial("logit")
+set.seed(123)
+model.logit.step.fit2 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
+summary(model.logit.step.fit2)
+
+#Coefficients:
+#  Estimate Std. Error z value Pr(>|z|)    
+#(Intercept)              -2.0934207  0.0895554 -23.376  < 2e-16 ***
+#  word_freq_your            0.3369296  0.0442133   7.621 2.53e-14 ***
+#  word_freq_000             3.3363191  0.5431417   6.143 8.12e-10 ***
+#  word_freq_remove          3.3459128  0.3705193   9.030  < 2e-16 ***
+#  word_freq_free            0.8689480  0.1129557   7.693 1.44e-14 ***
+#  capital_run_length_total  0.0011929  0.0001555   7.669 1.73e-14 ***
+#  word_freq_money           2.2607075  0.3790107   5.965 2.45e-09 ***
+#  char_freq_exclamation     0.5917706  0.1045152   5.662 1.50e-08 ***
+#  word_freq_our             0.5497582  0.0817822   6.722 1.79e-11 ***
+#  word_freq_hp             -3.2609878  0.4612506  -7.070 1.55e-12 ***
+#  char_freq_usd             5.4448198  0.7180941   7.582 3.39e-14 ***
+#  ---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+#(Dispersion parameter for binomial family taken to be 1)
+#Null deviance: 4314.1  on 3220  degrees of freedom
+#Residual deviance: 1949.1  on 3210  degrees of freedom
+#AIC: 1971.1
+#Number of Fisher Scoring iterations: 9
+
+# Method using train() on train -- long process time (1+ hours)
 # Another stepwise method that identifies which is best:
 # https://www.r-bloggers.com/evaluating-logistic-regression-models/
 names(getModelInfo()) # lots of glm options
@@ -423,208 +468,89 @@ head(model.logit.step2$results)
 # Predict train
 set.seed(123)
 model.logit.step2.pred <- predict(model.logit.step2, newdata = train, 
-                               type = "prob")[, 2]
-length(model.logit.step2.pred)
+                               type = "prob")[,2]
+length(model.logit.step2.pred) # 3221
 head(model.logit.step2.pred)
 
-# Create ROC curve
-# https://www.r-bloggers.com/roc-curves-in-two-lines-of-r-code/
-#simple_roc <- function(labels, scores){
-#  labels <- labels[order(scores, decreasing=TRUE)]
-#  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
-#}
-#simple_roc(train$y, model.logit.step2.pred)
-# Error in Math.factor(labels) : ‘cumsum’ not meaningful for factors 
-
-
-my.roc <- function(df,actual,probability){
-  # http://freakonometrics.hypotheses.org/9066
-  roc.curve=function(t,print=FALSE){
-    p=probability
-    a=actual
-    Pt=(p>t)*1
-    FP=sum((Pt==1)*(a==0))/sum(a==0) # false positive
-    TP=sum((Pt==1)*(a==1))/sum(a==1) # true positive
-    if(print==TRUE){
-      print(table(Observed=a,Predicted=Pt))
-    }
-    vect=c(FP,TP)
-    names(vect)=c("FPR","TPR")
-    return(vect)
-  }
-  threshold = 0.5
-  roc.curve(threshold,print=TRUE)
-  
-  ROC.curve=Vectorize(roc.curve)
-  
-  M.ROC=ROC.curve(seq(0,1,by=.01))
-  plot(M.ROC[1,],M.ROC[2,],type="l",xlab = "1 - Specificity", ylab = "Sensitivity")
-  abline(0,1, col="gray", lty=2)
-  
-  # https://www.kaggle.com/c/GiveMeSomeCredit/forums/t/942/r-script-for-auc-calculation
-  my.auc<-function(df,actual,probability){
-    N=length(probability)
-    N_pos=sum(actual)
-    df=data.frame(out=actual,prob=probability)
-    df=df[order(-df$prob),]
-    df$above=(1:N)-cumsum(df$out)
-    return(1-sum(df$above*df$out)/(N_pos*(N-N_pos)))
-  }
-  my.auc(df,actual,probability)
-}
-
-my.roc(train, train$y, model.logit.step2.pred)
-#           Predicted
-#Observed      0    1
-#Not_Spam   1866   92
-#Spam        137 1126
-
-# Accuracy = (TP + TN)/(TP + FP + TN + FN)
-accuracy <- function(df, actual, predicted){
-  c.matrix <- data.frame(table(actual, predicted))
-  TN <- c.matrix[1,3] # 119, TN
-  FN <- c.matrix[2,3] # 30, FN
-  FP <- c.matrix[3,3] # 5, FP
-  TP <- c.matrix[4,3] # 27, TP
-  
-  (TP + TN)/(TP + FP + TN + FN)
-}
-
-# Classification Error Rate = (FP + FN)/(TP + FP + TN + FN)
-class.error.rate <- function(df, actual, predicted){
-  c.matrix <- data.frame(table(actual, predicted))
-  TN <- c.matrix[1,3] # 119, TN
-  FN <- c.matrix[2,3] # 30, FN
-  FP <- c.matrix[3,3] # 5, FP
-  TP <- c.matrix[4,3] # 27, TP
-  
-  (FP + FN)/(TP + FP + TN + FN)
-}
-
-# Verify that you get an accuracy and an error rate that sums to one.
-accuracy.out <- accuracy(train, train$y, model.logit.step2.pred)
-class.error.rate.out <- class.error.rate(train, train$y, model.logit.step2.pred)
-accuracy.out + class.error.rate.out # 1
-
-# Precision = TP/(TP + FP)
-precision <- function(df, actual, predicted){
-  c.matrix <- data.frame(table(actual, predicted))
-  TN <- c.matrix[1,3] # 119, TN
-  FN <- c.matrix[2,3] # 30, FN
-  FP <- c.matrix[3,3] # 5, FP
-  TP <- c.matrix[4,3] # 27, TP
-  
-  TP/(TP + FP)
-}
-
-# Sensitivity = TP/(TP + FN)       ## aka True Positive Rate (TPR)
-sensitivity <- function(df, actual, predicted){
-  c.matrix <- data.frame(table(actual, predicted))
-  TN <- c.matrix[1,3] # 119, TN
-  FN <- c.matrix[2,3] # 30, FN
-  FP <- c.matrix[3,3] # 5, FP
-  TP <- c.matrix[4,3] # 27, TP
-  
-  TP/(TP + FN)
-}
-
-# Specificity = TN/(TN + FP)       ## aka True Negative Rate (TNR)
-specificity <- function(df, actual, predicted){
-  c.matrix <- data.frame(table(actual, predicted))
-  TN <- c.matrix[1,3] # 119, TN
-  FN <- c.matrix[2,3] # 30, FN
-  FP <- c.matrix[3,3] # 5, FP
-  TP <- c.matrix[4,3] # 27, TP
-  
-  TN/(TN + FP)
-}
-
-# F1 Score = (2*precision*sensitivity)/(precision + sensitivity)
-f1.score <- function(df, actual, predicted){
-  (2*precision(df, actual, predicted)*sensitivity(df, actual, predicted))/(precision(df, actual, predicted) + sensitivity(df, actual, predicted))
-}
-
-my.roc(train, train$y, model.logit.step2.pred) # 0.8503113
-
-accuracy(train, train$y, model.logit.step2.pred) # 0.9971831
-class.error.rate(train, train$y, model.logit.step2.pred) # 0.002816901
-precision(train, train$y, model.logit.step2.pred) # 0
-sensitivity(train, train$y, model.logit.step2.pred) # NaN
-specificity(train, train$y, model.logit.step2.pred) # 0.9971831
-f1.score(train, train$y, model.logit.step2.pred) # NaN
-
-
-
-
-
-install.packages("ROCR")
-library(ROC)
-set.seed(123)
-model.logit.step2.roc <- roc(response = train$y, 
-                          predictor = model.logit.step2.pred)
-set.seed(123)
-model.logit.step2.auc <- model.logit.step2.roc$auc[1]
+model.logit.step2.pred2 <- predict(model.logit.step2, newdata = train)
+dim(model.logit.step2.pred2) 
+head(model.logit.step2.pred2)
 
 # Plot ROC curve
-par(pty = "s")
+set.seed(123)
+model.logit.step2.roc <- plot.roc(train$y, model.logit.step2.pred)
+model.logit.step2.auc <- model.logit.step2.roc$auc
+model.logit.step2.auc # Area under the curve: 0.9781
+
+par(pty = "s") # "s" generates a square plotting region
 plot(model.logit.step2.roc, col = "steelblue", main = "ROC Curve")
-par(pty = "m")
+par(pty = "m") # "m" generates the maximal plotting region.
 
 # Predict train
 set.seed(123)
 model.logit.step2.pred2 <- predict(model.logit.step2, newdata = train) # no type = "prob"
 set.seed(123)
-model.logit.step2.cmat <- confusionMatrix(model.logit.step2.pred, train$y)
-model.logit.step2.cmat$overall[1]
+model.logit.step2.cmat <- confusionMatrix(model.logit.step2.pred2, train$y)
+model.logit.step2.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1866  137
+#Spam           92 1126
+
+#Accuracy : 0.9289          
+#95% CI : (0.9195, 0.9375)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8499          
+#Mcnemar's Test P-Value : 0.003642        
+
+#Sensitivity : 0.9530          
+#Specificity : 0.8915          
+#Pos Pred Value : 0.9316          
+#Neg Pred Value : 0.9245          
+#Prevalence : 0.6079          
+#Detection Rate : 0.5793          
+#Detection Prevalence : 0.6219          
+#Balanced Accuracy : 0.9223          
+#'Positive' Class : Not_Spam
 
 # Predict test
 set.seed(123)
 model.logit.step2.pred.test <- predict(model.logit.step2, newdata = test)
 set.seed(123)
 model.logit.step2.cmat.test <- confusionMatrix(model.logit.step2.pred.test, test$y)
-model.logit.step2.cmat.test$overall[1]
+model.logit.step2.cmat.test
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      801   66
+#Spam           29  484
+
+#Accuracy : 0.9312         
+#95% CI : (0.9165, 0.944)
+#No Information Rate : 0.6014         
+#P-Value [Acc > NIR] : < 2.2e-16      
+
+#Kappa : 0.8548         
+#Mcnemar's Test P-Value : 0.0002212      
+
+#Sensitivity : 0.9651         
+#Specificity : 0.8800         
+#Pos Pred Value : 0.9239         
+#Neg Pred Value : 0.9435         
+#Prevalence : 0.6014         
+#Detection Rate : 0.5804         
+#Detection Prevalence : 0.6283         
+#Balanced Accuracy : 0.9225         
+
+#'Positive' Class : Not_Spam
+
+
+
 
 ### Do above code using log train and log test sets?
-
-
-
-
-
-# Model D
-mod_fit <- train(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, method="glm", family="binomial")
-mod_fit$finalModel
-#Coefficients:
-#  (Intercept)            word_freq_your             word_freq_000          word_freq_remove  
-#-2.093421                  0.336930                  3.336319                  3.345913  
-#word_freq_free  capital_run_length_total           word_freq_money     char_freq_exclamation  
-#0.868948                  0.001193                  2.260708                  0.591771  
-#word_freq_our              word_freq_hp             char_freq_usd  
-#0.549758                 -3.260988                  5.444820  
-
-#Degrees of Freedom: 3220 Total (i.e. Null);  3210 Residual
-#Null Deviance:	    4314 
-#Residual Deviance: 1949 	AIC: 1971
-
-# Model E
-set.seed(123)
-model.logit.1 <- glm(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, family=binomial("logit"))
-summary(model.logit.1)
-
-#Coefficients:
-#  Estimate Std. Error z value Pr(>|z|)    
-#(Intercept)              -2.0934207  0.0895554 -23.376  < 2e-16 ***
-#  word_freq_your            0.3369296  0.0442133   7.621 2.53e-14 ***
-#  word_freq_000             3.3363191  0.5431417   6.143 8.12e-10 ***
-#  word_freq_remove          3.3459128  0.3705193   9.030  < 2e-16 ***
-#  word_freq_free            0.8689480  0.1129557   7.693 1.44e-14 ***
-#  capital_run_length_total  0.0011929  0.0001555   7.669 1.73e-14 ***
-#  word_freq_money           2.2607075  0.3790107   5.965 2.45e-09 ***
-#  char_freq_exclamation     0.5917706  0.1045152   5.662 1.50e-08 ***
-#  word_freq_our             0.5497582  0.0817822   6.722 1.79e-11 ***
-#  word_freq_hp             -3.2609878  0.4612506  -7.070 1.55e-12 ***
-#  char_freq_usd             5.4448198  0.7180941   7.582 3.39e-14 ***
-#  ---
-#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 
 # -------------------------------------------------------------------------#
@@ -950,4 +876,134 @@ do.call("grid.arrange", c(plotsA.box, ncol=3))
 plotsB.box <- lapply(colnames(pred.log[1:57]), lat.box)
 length(plotsB.box)
 do.call("grid.arrange", c(plotsB.box, ncol=3))
+
+
+
+# Create ROC curve
+# https://www.r-bloggers.com/roc-curves-in-two-lines-of-r-code/
+#simple_roc <- function(labels, scores){
+#  labels <- labels[order(scores, decreasing=TRUE)]
+#  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
+#}
+#simple_roc(train$y, model.logit.step2.pred2)
+# Error in Math.factor(labels) : ‘cumsum’ not meaningful for factors 
+
+
+my.roc <- function(df,actual,probability){
+  # http://freakonometrics.hypotheses.org/9066
+  roc.curve=function(t,print=FALSE){
+    p=probability
+    a=actual
+    Pt=(p>t)*1
+    FP=sum((Pt==1)*(a==0))/sum(a==0) # false positive
+    TP=sum((Pt==1)*(a==1))/sum(a==1) # true positive
+    if(print==TRUE){
+      print(table(Observed=a,Predicted=Pt))
+    }
+    vect=c(FP,TP)
+    names(vect)=c("FPR","TPR")
+    return(vect)
+  }
+  threshold = 0.5
+  roc.curve(threshold,print=TRUE)
+  
+  ROC.curve=Vectorize(roc.curve)
+  
+  M.ROC=ROC.curve(seq(0,1,by=.01))
+  plot(M.ROC[1,],M.ROC[2,],type="l",xlab = "1 - Specificity", ylab = "Sensitivity")
+  abline(0,1, col="gray", lty=2)
+  
+  # https://www.kaggle.com/c/GiveMeSomeCredit/forums/t/942/r-script-for-auc-calculation
+  my.auc<-function(df,actual,probability){
+    N=length(probability)
+    N_pos=sum(actual)
+    df=data.frame(out=actual,prob=probability)
+    df=df[order(-df$prob),]
+    df$above=(1:N)-cumsum(df$out)
+    return(1-sum(df$above*df$out)/(N_pos*(N-N_pos)))
+  }
+  my.auc(df,actual,probability)
+}
+
+my.roc(train, train$y, model.logit.step2.pred)
+#           Predicted
+#Observed      0    1
+#Not_Spam   1866   92
+#Spam        137 1126
+
+# Accuracy = (TP + TN)/(TP + FP + TN + FN)
+accuracy <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  (TP + TN)/(TP + FP + TN + FN)
+}
+
+# Classification Error Rate = (FP + FN)/(TP + FP + TN + FN)
+class.error.rate <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  (FP + FN)/(TP + FP + TN + FN)
+}
+
+# Verify that you get an accuracy and an error rate that sums to one.
+accuracy.out <- accuracy(train, train$y, model.logit.step2.pred)
+class.error.rate.out <- class.error.rate(train, train$y, model.logit.step2.pred)
+accuracy.out + class.error.rate.out # 1
+
+# Precision = TP/(TP + FP)
+precision <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TP/(TP + FP)
+}
+
+# Sensitivity = TP/(TP + FN)       ## aka True Positive Rate (TPR)
+sensitivity <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TP/(TP + FN)
+}
+
+# Specificity = TN/(TN + FP)       ## aka True Negative Rate (TNR)
+specificity <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TN/(TN + FP)
+}
+
+# F1 Score = (2*precision*sensitivity)/(precision + sensitivity)
+f1.score <- function(df, actual, predicted){
+  (2*precision(df, actual, predicted)*sensitivity(df, actual, predicted))/(precision(df, actual, predicted) + sensitivity(df, actual, predicted))
+}
+
+my.roc(train, train$y, model.logit.step2.pred) # 0.8503113
+
+accuracy(train, train$y, model.logit.step2.pred) # 0.9971831
+class.error.rate(train, train$y, model.logit.step2.pred) # 0.002816901
+precision(train, train$y, model.logit.step2.pred) # 0
+sensitivity(train, train$y, model.logit.step2.pred) # NaN
+specificity(train, train$y, model.logit.step2.pred) # 0.9971831
+f1.score(train, train$y, model.logit.step2.pred) # NaN
+
+
 
