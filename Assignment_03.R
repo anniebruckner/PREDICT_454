@@ -608,16 +608,16 @@ model.tree.cmat.test
 
 
 
-# Model B
+# Model tree with 10-fold CV x 3
 ptm <- proc.time() # Start the clock!
 control.tree <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
 set.seed(123)
-tree.CV <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
+model.tree2 <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
 proc.time() - ptm # Stop the clock
 
 # Fitting cp = 0.0435 on full training set
-tree.CV$finalModel
-fancyRpartPlot(tree.CV$finalModel, sub = "")
+model.tree2$finalModel
+fancyRpartPlot(model.tree2$finalModel, sub = "")
 
 # -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
@@ -754,9 +754,9 @@ head(train.matrix)
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 # mtry can be 57 at most because of number of columns in train.matrix
-fit4_baseline <- randomForest(train.matrix, train$y, mtry=floor(sqrt(ncol(train.matrix))), importance=TRUE)
+rf_baseline <- randomForest(train.matrix, train$y, mtry=floor(sqrt(ncol(train.matrix))), importance=TRUE)
 proc.time() - ptm # Stop the clock
-fit4_baseline
+rf_baseline
 #Number of trees: 500
 #No. of variables tried at each split: 7
 #OOB estimate of  error rate: 4.75%
