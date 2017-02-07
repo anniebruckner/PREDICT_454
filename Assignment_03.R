@@ -831,24 +831,24 @@ fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
 fit4a # OOB estimate of  error rate: 5.06%
 proc.time() - ptm # Stop the clock
 
-# Model B
+# RF train using train()
 ptm <- proc.time() # Start the clock!
-rf.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-proc.time() - ptm # Stop the clock
-
-ptm <- proc.time() # Start the clock!
-rf.control2 <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+rf.control.cv <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
 proc.time() - ptm # Stop the clock
 
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control)
+model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cv)
 proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
 ptm <- proc.time() # Start the clock!
+rf.control.cvr <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+proc.time() - ptm # Stop the clock
+
+ptm <- proc.time() # Start the clock!
 set.seed(123)
-model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control2)
+model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cvr)
 proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
