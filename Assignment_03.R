@@ -316,6 +316,7 @@ dim(test.log) # 1380   58
 # (1) a logistic regression model using variable selection
 
 # Backward train
+set.seed(123)
 model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=NULL, method="backward")
 options(max.print=1000000)
 summary(model.logit.bwd)
@@ -324,33 +325,44 @@ names(model.logit.bwd) # Is there a metric that lets me see which is best?
 #model.logit.bwd$rss[58] # 330.9772
 
 # Forward train
+set.seed(123)
 model.logit.fwd <- regsubsets(y ~ ., data = train, nvmax=NULL, method="forward")
 options(max.print=1000000)
 summary(model.logit.fwd) # chooses the same top 15+ variables as bwd
 
 # Stepwise train
+set.seed(123)
 model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
 options(max.print=1000000)
 summary(model.logit.step)
 
-# All Subsets train
+# All Subsets train -- very long process time (overnight rec)
+set.seed(123)
 model.logit.allsub <- regsubsets(y ~ ., data = train, nvmax=NULL, method="exhaustive", really.big = TRUE)
 options(max.print=1000000)
 summary(model.logit.allsub)
 
-# Model C
-logit.control <- trainControl(classProbs = T, savePred = T , verboseIter = T)
-
+# Method using train() on train -- long process time
 # Another stepwise method that identifies which is best:
 # https://www.r-bloggers.com/evaluating-logistic-regression-models/
-set.seed(123)
-model.logit.stepAIC <- train(y ~ ., data = train, method = "glmStepAIC",
-                             direction = "forward", trControl = logit.control)
+names(getModelInfo()) # lots of glm options
+#model.logit.step2 <- train(y ~ ., data = train, method = "leapSeq") # wrong model type for classification
 
-names(model.logit.stepAIC)
-model.logit.stepAIC$finalModel
-length(model.logit.stepAIC$finalModel$coefficients)-1 # find number of predictors used: 37
-AIC(model.logit.stepAIC$finalModel) # 1330.207
+# Timing code: http://www.ats.ucla.edu/stat/r/faq/timing_code.htm
+ptm <- proc.time() # Start the clock!
+
+logit.control <- trainControl(classProbs = T, savePred = T , verboseIter = T)
+set.seed(123)
+model.logit.step2 <- train(y ~ ., data = train, method = "glmStepAIC",
+                           direction = "forward", trControl = logit.control)
+proc.time() - ptm # Stop the clock
+
+names(model.logit.step2)
+model.logit.step2$finalModel
+summary(model.logit.step2$finalModel)
+length(model.logit.step2$finalModel$coefficients)-1 # find number of predictors used: 37
+AIC(model.logit.step2$finalModel) # 1330.207
+
 
 # Model D
 mod_fit <- train(y ~ word_freq_your + word_freq_000 + word_freq_remove + word_freq_free + capital_run_length_total + word_freq_money + char_freq_exclamation + word_freq_our + word_freq_hp + char_freq_usd,  data=train, method="glm", family="binomial")
@@ -390,30 +402,40 @@ summary(model.logit.1)
 
 # (2) a tree model
 # Model A
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 fit2 <- rpart(y ~ ., data = train)
 fit2
+proc.time() - ptm # Stop the clock
+
 dev.new(width=10, height=8) # This fixes the tiny font issue
-fit2_plot <- fancyRpartPlot(fit2, sub = "") # Why is the font so small?
+fit2_plot <- fancyRpartPlot(fit2, sub = "") # The font is very small without the above code
 dev.off()
 
 # Model B
+ptm <- proc.time() # Start the clock!
 control.tree <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
 set.seed(123)
 tree.CV <- train(y ~ ., data = train, method = "rpart", trControl = control.tree)
+proc.time() - ptm # Stop the clock
+
 # Fitting cp = 0.0435 on full training set
 tree.CV$finalModel
 fancyRpartPlot(tree.CV$finalModel, sub = "")
 
 # (3) a Support Vector Machine
 # Model A
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.svm <- svm(y~., data=train, kernel ="linear", cost =1)
+proc.time() - ptm # Stop the clock
 summary(model.svm)
 plot(model.svm , train$y)
 
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 svm.tune <- tune(svm,y~.,data=train, kernel ="radial", ranges=list(cost=c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+proc.time() - ptm # Stop the clock
 svm.tune$best.model
 #Parameters:
 #  SVM-Type:  C-classification 
@@ -439,12 +461,14 @@ summary(svm.tune)
 #7 1e+02 0.07916851 0.009176701
 
 # Model B
+ptm <- proc.time() # Start the clock!
 svm.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-processing.time <- proc.time()
 #names(getModelInfo())
 set.seed(123)
 model.svm.CV <- train(y ~ ., data = train, method = "svmRadial", # or svmRadialWeights? -- same results
                     trControl = svm.control) # metric="ROC" doesn't do anything for this model
+proc.time() - ptm # Stop the clock
+
 #+ Fold01: sigma=0.02897, C=0.25 
 #- Fold01: sigma=0.02897, C=0.25 
 #+ Fold01: sigma=0.02897, C=0.50 
@@ -523,14 +547,18 @@ model.svm.CV$finalModel
 
 # (4) Random Forest
 # Model A
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 train.matrix  <- model.matrix(y ~ ., data=train)[,-58] # create predictor matrix (subtract last column, the response variable)
+proc.time() - ptm # Stop the clock
 ncol(train.matrix) # 57
 head(train.matrix)
 
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 # mtry can be 57 at most because of number of columns in train.matrix
 fit4_baseline <- randomForest(train.matrix, train$y, mtry=floor(sqrt(ncol(train.matrix))), importance=TRUE)
+proc.time() - ptm # Stop the clock
 fit4_baseline
 #Number of trees: 500
 #No. of variables tried at each split: 7
@@ -541,11 +569,14 @@ fit4_baseline
 #Spam           96 1167  0.07600950
 
 # Random Search
-#control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
-#set.seed(123)
-#mtry <- sqrt(ncol(train.matrix)) # 7.549834
-#rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
-#print(rf_random)
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+mtry <- sqrt(ncol(train.matrix)) # 7.549834
+set.seed(123)
+rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", tuneLength=15, trControl=control)
+proc.time() - ptm # Stop the clock
+print(rf_random)
 #3221 samples
 #57 predictor
 #2 classes: 'Not_Spam', 'Spam'
@@ -574,9 +605,10 @@ fit4_baseline
 #The final value used for the model was mtry = 6.
 
 #plot(rf_random)
-
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 fit4 <- randomForest(train.matrix, train$y, mtry=6, importance=TRUE)
+proc.time() - ptm # Stop the clock
 fit4 # run rf_random again when I have time since the fit4 output changed
 # results on 2/3
 #Number of trees: 500
@@ -596,20 +628,31 @@ fit4 # run rf_random again when I have time since the fit4 output changed
 #Not_Spam     1901   57  0.02911134
 #Spam           96 1167  0.07600950
 
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
 fit4a # OOB estimate of  error rate: 5.06%
+proc.time() - ptm # Stop the clock
 
 # Model B
+ptm <- proc.time() # Start the clock!
 rf.control <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-rf.control2 <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+proc.time() - ptm # Stop the clock
 
+ptm <- proc.time() # Start the clock!
+rf.control2 <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
+proc.time() - ptm # Stop the clock
+
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control)
+proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
+ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.rf2 <- train(y ~ ., data = train, method = "rf", trControl = rf.control2)
+proc.time() - ptm # Stop the clock
 #Fitting mtry = 29 on full training set
 
 
