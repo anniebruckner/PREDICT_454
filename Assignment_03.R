@@ -571,16 +571,75 @@ set.seed(123)
 model.logit.step2.log <- train(y ~ ., data = train.log, method = "glmStepAIC",
                            direction = "forward", trControl = logit.control.log)
 proc.time() - ptm # Stop the clock
+#user   system  elapsed 
+#2501.051  306.174 2810.266
 
 names(model.logit.step2.log)
 model.logit.step2.log$finalModel
 summary(model.logit.step2.log$finalModel)
+#Deviance Residuals: 
+#  Min       1Q   Median       3Q      Max  
+#-3.8997  -0.1531  -0.0001   0.0995   4.6056  
 
-length(model.logit.step2.log$finalModel$coefficients)-1 # find number of predictors used: 37
-AIC(model.logit.step2.log$finalModel) # 1330.207
+#Coefficients:
+#  Estimate Std. Error z value Pr(>|z|)    
+#(Intercept)                 -5.3309     0.4110 -12.971  < 2e-16 ***
+#  capital_run_length_longest   0.1329     0.1761   0.755 0.450199    
+#word_freq_hp                -5.3451     0.9016  -5.928 3.06e-09 ***
+#  word_freq_remove             2.8306     0.4988   5.674 1.39e-08 ***
+#  char_freq_usd                5.4794     1.0016   5.471 4.49e-08 ***
+#  word_freq_free               1.5916     0.2562   6.213 5.20e-10 ***
+#  word_freq_george           -11.0782     2.5433  -4.356 1.33e-05 ***
+#  word_freq_edu               -2.6399     0.5440  -4.852 1.22e-06 ***
+#  char_freq_exclamation        2.2196     0.2858   7.766 8.08e-15 ***
+#  word_freq_our                1.4757     0.2479   5.952 2.65e-09 ***
+#  word_freq_meeting           -4.2303     1.3627  -3.104 0.001908 ** 
+#  word_freq_business           1.6117     0.4627   3.483 0.000495 ***
+#  word_freq_000                2.0251     0.6476   3.127 0.001764 ** 
+#  word_freq_money              2.3107     0.6664   3.467 0.000525 ***
+#  capital_run_length_total     0.6780     0.1186   5.715 1.09e-08 ***
+#  word_freq_conference        -4.5997     1.9685  -2.337 0.019456 *  
+#  word_freq_internet           1.3783     0.3815   3.613 0.000302 ***
+#  word_freq_cs               -41.1898    34.1304  -1.207 0.227496    
+#word_freq_re                -1.2928     0.3317  -3.898 9.71e-05 ***
+#  word_freq_data              -1.8198     0.7049  -2.582 0.009831 ** 
+#  char_freq_semicolon         -2.1116     0.6332  -3.335 0.000854 ***
+#  word_freq_credit             1.9559     0.8159   2.397 0.016517 *  
+#  word_freq_project           -2.5548     1.0277  -2.486 0.012919 *  
+#  char_freq_pound              2.1250     1.3606   1.562 0.118338    
+#word_freq_650                1.9252     0.5299   3.633 0.000280 ***
+#  word_freq_85                -2.7699     1.3856  -1.999 0.045602 *  
+#  word_freq_your               0.5353     0.1766   3.031 0.002441 ** 
+#  word_freq_415              -15.8209     5.2630  -3.006 0.002647 ** 
+#  word_freq_make              -1.0501     0.4938  -2.126 0.033474 *  
+#  word_freq_original          -3.6931     2.0134  -1.834 0.066613 .  
+#char_freq_l_paren           -1.3442     0.6083  -2.210 0.027123 *  
+#  word_freq_over               1.2769     0.5222   2.445 0.014485 *  
+#  capital_run_length_average   0.6121     0.3063   1.998 0.045711 *  
+#  word_freq_technology         1.1874     0.5947   1.997 0.045854 *  
+#  word_freq_hpl               -1.6194     1.0318  -1.570 0.116525    
+#word_freq_order              0.9031     0.5967   1.513 0.130177    
+#word_freq_report             0.7500     0.4451   1.685 0.091970 .  
+#word_freq_people            -0.7856     0.4781  -1.643 0.100363    
+#word_freq_lab               -1.9911     1.6562  -1.202 0.229280    
+#word_freq_will              -0.3046     0.2119  -1.438 0.150551    
+---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+#(Dispersion parameter for binomial family taken to be 1)
+
+#Null deviance: 4314.11  on 3220  degrees of freedom
+#Residual deviance:  990.75  on 3181  degrees of freedom
+#AIC: 1070.7
+#Number of Fisher Scoring iterations: 12
+
+length(model.logit.step2.log$finalModel$coefficients)-1 # find number of predictors used: 41
+AIC(model.logit.step2.log$finalModel) # 1070.747
 head(model.logit.step2.log$pred)
 model.logit.step2.log$metric # Accuracy
 head(model.logit.step2.log$results)
+#parameter  Accuracy     Kappa  AccuracySD    KappaSD
+#1      none 0.9314212 0.8559029 0.006049884 0.01248536
 
 # Predict train
 set.seed(123)
@@ -593,7 +652,7 @@ head(model.logit.step2.pred.log)
 set.seed(123)
 model.logit.step2.roc.log <- plot.roc(train.log$y, model.logit.step2.pred.log)
 model.logit.step2.auc.log <- model.logit.step2.roc.log$auc
-model.logit.step2.auc.log # Area under the curve: 0.9781
+model.logit.step2.auc.log # Area under the curve: 0.9847
 
 par(pty = "s") # "s" generates a square plotting region
 plot(model.logit.step2.roc.log, col = "steelblue", main = "ROC Curve for log Stepwise Logistic Regression Model")
@@ -610,6 +669,27 @@ model.logit.step2.cmat.log
 #Confusion Matrix and Statistics
 #Reference
 #Prediction Not_Spam Spam
+#Not_Spam     1873   97
+#Spam           85 1166
+
+#Accuracy : 0.9435         
+#95% CI : (0.935, 0.9512)
+#No Information Rate : 0.6079         
+#P-Value [Acc > NIR] : <2e-16         
+
+#Kappa : 0.8813         
+#Mcnemar's Test P-Value : 0.4149         
+
+#Sensitivity : 0.9566         
+#Specificity : 0.9232         
+#Pos Pred Value : 0.9508         
+#Neg Pred Value : 0.9321         
+#Prevalence : 0.6079         
+#Detection Rate : 0.5815         
+#Detection Prevalence : 0.6116         
+#Balanced Accuracy : 0.9399         
+
+#'Positive' Class : Not_Spam
 
 # Predict test
 set.seed(123)
@@ -621,6 +701,28 @@ model.logit.step2.cmat.test.log
 #Confusion Matrix and Statistics
 #Reference
 #Prediction Not_Spam Spam
+#Not_Spam      800   57
+#Spam           30  493
+
+#Accuracy : 0.937           
+#95% CI : (0.9228, 0.9492)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8674          
+#Mcnemar's Test P-Value : 0.005312        
+
+#Sensitivity : 0.9639          
+#Specificity : 0.8964          
+#Pos Pred Value : 0.9335          
+#Neg Pred Value : 0.9426          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5797          
+#Detection Prevalence : 0.6210          
+#Balanced Accuracy : 0.9301          
+
+#'Positive' Class : Not_Spam
+
 
 # -------------------------------------------------------------------------#
 # (2) a tree model -- model.tree does way better than model.tree2
