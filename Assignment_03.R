@@ -360,8 +360,234 @@ proc.time() - ptm # Stop the clock
 names(model.logit.step2)
 model.logit.step2$finalModel
 summary(model.logit.step2$finalModel)
+#Deviance Residuals: 
+#  Min       1Q   Median       3Q      Max  
+#-3.7669  -0.1719   0.0000   0.1227   5.1694  
+
+#Coefficients:
+#  Estimate Std. Error z value Pr(>|z|)    
+#(Intercept)                -1.456e+00  1.292e-01 -11.262  < 2e-16 ***
+#  char_freq_usd               4.300e+00  7.265e-01   5.919 3.25e-09 ***
+#  word_freq_hp               -2.737e+00  5.748e-01  -4.763 1.91e-06 ***
+#  word_freq_remove            1.910e+00  3.345e-01   5.710 1.13e-08 ***
+#  capital_run_length_longest  1.073e-02  2.052e-03   5.231 1.69e-07 ***
+#  word_freq_george           -1.129e+01  2.035e+00  -5.548 2.89e-08 ***
+#  word_freq_free              1.036e+00  1.639e-01   6.320 2.62e-10 ***
+#  word_freq_edu              -1.596e+00  3.502e-01  -4.557 5.18e-06 ***
+#  word_freq_business          1.181e+00  2.801e-01   4.218 2.47e-05 ***
+#  word_freq_meeting          -2.866e+00  1.074e+00  -2.670 0.007585 ** 
+#  word_freq_000               2.037e+00  4.457e-01   4.569 4.90e-06 ***
+#  word_freq_money             1.858e+00  4.623e-01   4.019 5.86e-05 ***
+#  word_freq_our               5.602e-01  1.225e-01   4.571 4.85e-06 ***
+#  word_freq_order             1.116e+00  3.426e-01   3.257 0.001125 ** 
+#  word_freq_project          -1.821e+00  6.322e-01  -2.880 0.003973 ** 
+#  word_freq_credit            1.512e+00  6.357e-01   2.378 0.017405 *  
+#  word_freq_over              9.780e-01  3.387e-01   2.887 0.003885 ** 
+#  word_freq_data             -1.024e+00  4.218e-01  -2.429 0.015155 *  
+#  word_freq_conference       -3.486e+00  1.621e+00  -2.150 0.031520 *  
+#  word_freq_re               -7.424e-01  1.895e-01  -3.918 8.92e-05 ***
+#  char_freq_exclamation       3.254e-01  1.007e-01   3.232 0.001228 ** 
+#  word_freq_internet          5.097e-01  1.767e-01   2.885 0.003912 ** 
+#  word_freq_cs               -3.749e+01  2.632e+01  -1.425 0.154207    
+#capital_run_length_total    7.734e-04  2.571e-04   3.008 0.002629 ** 
+#  word_freq_your              2.162e-01  5.968e-02   3.623 0.000291 ***
+#  word_freq_hpl              -2.049e+00  8.476e-01  -2.417 0.015634 *  
+#  char_freq_pound             3.442e+00  9.622e-01   3.577 0.000347 ***
+#  char_freq_semicolon        -9.616e-01  3.452e-01  -2.786 0.005343 ** 
+#  word_freq_address          -1.467e-01  7.465e-02  -1.966 0.049345 *  
+#  word_freq_415              -1.394e+01  4.195e+00  -3.322 0.000892 ***
+#  word_freq_650               4.755e-01  2.526e-01   1.882 0.059814 .  
+#word_freq_3d                1.334e+00  1.512e+00   0.882 0.377569    
+#word_freq_85               -1.544e+00  8.025e-01  -1.924 0.054394 .  
+#word_freq_make             -5.405e-01  2.624e-01  -2.060 0.039391 *  
+#  word_freq_pm               -8.879e-01  4.448e-01  -1.996 0.045934 *  
+#  word_freq_lab              -1.679e+00  1.266e+00  -1.327 0.184666    
+#word_freq_technology        8.158e-01  3.859e-01   2.114 0.034506 *  
+#  word_freq_original         -1.321e+00  1.059e+00  -1.247 0.212279    
+#---
+#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+#(Dispersion parameter for binomial family taken to be 1)
+#Null deviance: 4314.1  on 3220  degrees of freedom
+#Residual deviance: 1254.2  on 3183  degrees of freedom
+#AIC: 1330.2
+#Number of Fisher Scoring iterations: 13
+
 length(model.logit.step2$finalModel$coefficients)-1 # find number of predictors used: 37
 AIC(model.logit.step2$finalModel) # 1330.207
+head(model.logit.step2$pred)
+model.logit.step2$metric # Accuracy
+head(model.logit.step2$results)
+#parameter  Accuracy     Kappa  AccuracySD    KappaSD
+#1      none 0.9164162 0.8237562 0.007529417 0.01584371
+
+# Predict train
+set.seed(123)
+model.logit.step2.pred <- predict(model.logit.step2, newdata = train, 
+                               type = "prob")[, 2]
+length(model.logit.step2.pred)
+head(model.logit.step2.pred)
+
+# Create ROC curve
+# https://www.r-bloggers.com/roc-curves-in-two-lines-of-r-code/
+#simple_roc <- function(labels, scores){
+#  labels <- labels[order(scores, decreasing=TRUE)]
+#  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
+#}
+#simple_roc(train$y, model.logit.step2.pred)
+# Error in Math.factor(labels) : ‘cumsum’ not meaningful for factors 
+
+
+my.roc <- function(df,actual,probability){
+  # http://freakonometrics.hypotheses.org/9066
+  roc.curve=function(t,print=FALSE){
+    p=probability
+    a=actual
+    Pt=(p>t)*1
+    FP=sum((Pt==1)*(a==0))/sum(a==0) # false positive
+    TP=sum((Pt==1)*(a==1))/sum(a==1) # true positive
+    if(print==TRUE){
+      print(table(Observed=a,Predicted=Pt))
+    }
+    vect=c(FP,TP)
+    names(vect)=c("FPR","TPR")
+    return(vect)
+  }
+  threshold = 0.5
+  roc.curve(threshold,print=TRUE)
+  
+  ROC.curve=Vectorize(roc.curve)
+  
+  M.ROC=ROC.curve(seq(0,1,by=.01))
+  plot(M.ROC[1,],M.ROC[2,],type="l",xlab = "1 - Specificity", ylab = "Sensitivity")
+  abline(0,1, col="gray", lty=2)
+  
+  # https://www.kaggle.com/c/GiveMeSomeCredit/forums/t/942/r-script-for-auc-calculation
+  my.auc<-function(df,actual,probability){
+    N=length(probability)
+    N_pos=sum(actual)
+    df=data.frame(out=actual,prob=probability)
+    df=df[order(-df$prob),]
+    df$above=(1:N)-cumsum(df$out)
+    return(1-sum(df$above*df$out)/(N_pos*(N-N_pos)))
+  }
+  my.auc(df,actual,probability)
+}
+
+my.roc(train, train$y, model.logit.step2.pred)
+#           Predicted
+#Observed      0    1
+#Not_Spam   1866   92
+#Spam        137 1126
+
+# Accuracy = (TP + TN)/(TP + FP + TN + FN)
+accuracy <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  (TP + TN)/(TP + FP + TN + FN)
+}
+
+# Classification Error Rate = (FP + FN)/(TP + FP + TN + FN)
+class.error.rate <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  (FP + FN)/(TP + FP + TN + FN)
+}
+
+# Verify that you get an accuracy and an error rate that sums to one.
+accuracy.out <- accuracy(train, train$y, model.logit.step2.pred)
+class.error.rate.out <- class.error.rate(train, train$y, model.logit.step2.pred)
+accuracy.out + class.error.rate.out # 1
+
+# Precision = TP/(TP + FP)
+precision <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TP/(TP + FP)
+}
+
+# Sensitivity = TP/(TP + FN)       ## aka True Positive Rate (TPR)
+sensitivity <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TP/(TP + FN)
+}
+
+# Specificity = TN/(TN + FP)       ## aka True Negative Rate (TNR)
+specificity <- function(df, actual, predicted){
+  c.matrix <- data.frame(table(actual, predicted))
+  TN <- c.matrix[1,3] # 119, TN
+  FN <- c.matrix[2,3] # 30, FN
+  FP <- c.matrix[3,3] # 5, FP
+  TP <- c.matrix[4,3] # 27, TP
+  
+  TN/(TN + FP)
+}
+
+# F1 Score = (2*precision*sensitivity)/(precision + sensitivity)
+f1.score <- function(df, actual, predicted){
+  (2*precision(df, actual, predicted)*sensitivity(df, actual, predicted))/(precision(df, actual, predicted) + sensitivity(df, actual, predicted))
+}
+
+my.roc(train, train$y, model.logit.step2.pred) # 0.8503113
+
+accuracy(train, train$y, model.logit.step2.pred) # 0.9971831
+class.error.rate(train, train$y, model.logit.step2.pred) # 0.002816901
+precision(train, train$y, model.logit.step2.pred) # 0
+sensitivity(train, train$y, model.logit.step2.pred) # NaN
+specificity(train, train$y, model.logit.step2.pred) # 0.9971831
+f1.score(train, train$y, model.logit.step2.pred) # NaN
+
+
+
+
+
+install.packages("ROCR")
+library(ROC)
+set.seed(123)
+model.logit.step2.roc <- roc(response = train$y, 
+                          predictor = model.logit.step2.pred)
+set.seed(123)
+model.logit.step2.auc <- model.logit.step2.roc$auc[1]
+
+# Plot ROC curve
+par(pty = "s")
+plot(model.logit.step2.roc, col = "steelblue", main = "ROC Curve")
+par(pty = "m")
+
+# Predict train
+set.seed(123)
+model.logit.step2.pred2 <- predict(model.logit.step2, newdata = train) # no type = "prob"
+set.seed(123)
+model.logit.step2.cmat <- confusionMatrix(model.logit.step2.pred, train$y)
+model.logit.step2.cmat$overall[1]
+
+# Predict test
+set.seed(123)
+model.logit.step2.pred.test <- predict(model.logit.step2, newdata = test)
+set.seed(123)
+model.logit.step2.cmat.test <- confusionMatrix(model.logit.step2.pred.test, test$y)
+model.logit.step2.cmat.test$overall[1]
+
+### Do above code using log train and log test sets?
+
+
+
 
 
 # Model D
@@ -400,6 +626,8 @@ summary(model.logit.1)
 #  ---
 #  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
+
+# -------------------------------------------------------------------------#
 # (2) a tree model
 # Model A
 ptm <- proc.time() # Start the clock!
@@ -423,6 +651,7 @@ proc.time() - ptm # Stop the clock
 tree.CV$finalModel
 fancyRpartPlot(tree.CV$finalModel, sub = "")
 
+# -------------------------------------------------------------------------#
 # (3) a Support Vector Machine
 # Model A
 ptm <- proc.time() # Start the clock!
@@ -544,7 +773,7 @@ model.svm.CV$finalModel
 #Training error : 0.044396 
 #Probability model included. 
 
-
+# -------------------------------------------------------------------------#
 # (4) Random Forest
 # Model A
 ptm <- proc.time() # Start the clock!
