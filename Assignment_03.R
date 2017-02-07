@@ -151,13 +151,13 @@ str(data)
 #pred.log1 <- data.frame(pred.log1, y = data$y)
 #head(pred.log1) # has -Inf, doesn't work well in plots
 
-pred.log <- lapply(data[1:57], log1p)
+pred.log <- lapply(data[1:57], log1p) # log1p works better than log when x is small
 pred.log <- data.frame(pred.log, y = data$y)
 head(pred.log)
 
 summary(data)
 
-# Plot histograms of the variables--How can I do this using lattice?
+# Plot histograms of the variables--See how to do this in lattice after PlotsD
 plot_vars <- function (data, column){
   ggplot(data = data, aes_string(x = column)) +
     geom_histogram(color =I("black"), fill = I("steelblue"))+
@@ -214,23 +214,23 @@ do.call("grid.arrange", c(plots.overview, ncol=6))
 # Interesting Spam v. Not_Span differences: capital_run_length_total, usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, email, business, free, people, receive, mail, order, internet, remove, over, our, all, address, make
 # spam: make, address, all, our, over, remove, internet, order, mail, receive, people, free, business, email, your, you, 000, money, exclamation, usd
 # not_spam: hp, hpl, george, 1999, re
-# for plots in report:
+
+#######################################################
+# EDA
+#######################################################
+
+# Interesting boxplots for discussion
+plots.report <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), myBoxplots, pred.log)
+length(plots.report)
+do.call("grid.arrange", c(plots.report, ncol=3))
 # spam: free, money, exclamation
 # not_spam: hp, george, re
 # your, capital_run_length_average, capital_run_length_longest
 
-plots.report <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), myBoxplots, pred.log)
-length(plots.report)
-do.call("grid.arrange", c(plots.report, ncol=3))
-
-#######################################################
-# EDA -- Make sure to talk about a few interesting box plots
-#######################################################
-
 # Create naive tree models
 set.seed(123)
 fancyRpartPlot(rpart(y ~ ., data = data), sub = "")
-#fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
+fancyRpartPlot(rpart(y ~ ., data = pred.log), sub = "")
 
 # Examine correlations among just numeric variables
 c <- cor(data[1:57], use="complete.obs")
@@ -259,12 +259,13 @@ for (i in 1:nrow(correlations)){
 
 significant.correlations <- significant.correlations[order(abs(significant.correlations$corr),decreasing=TRUE),] 
 significant.correlations <- significant.correlations[which(!duplicated(significant.correlations$corr)),]
-significant.correlations
+significant.correlations # this is not helpful enough to include
 
 # Create object containing names of only predictor variables
 pred <- colnames(data[1:57])
+pred2 <- colnames(pred.log[1:57])
 
-# Visualize correlations between predictors and response
+# Visualize correlations between predictors and response classes -- these are too hard to read
 corrplot(cor(data[data$y == "Not_Spam", pred]),
          tl.col = "black", tl.cex = 0.7, tl.srt = 45,
          mar=c(1,1,2,2), type = "lower", main = "Correlations for Not_Spam")
@@ -274,7 +275,7 @@ corrplot(cor(data[data$y == "Spam", pred]),
          mar=c(1,1,2,2), type = "lower", main = "Correlations for Spam")
 
 #######################################################
-# Model Build - Set Up
+# Model Build - Set Up par(mfrow=c(1,1))
 #######################################################
 
 # Create train/test sets (70/30)
@@ -290,6 +291,17 @@ dim(train) # 3221   58
 head(test)
 dim(test) # 1380   58
 
+# Create log train/test sets (70/30)
+set.seed(123)
+train.log <- sample_frac(pred.log, 0.70)
+train_id.log <- as.numeric(rownames(train.log)) 
+test.log <- pred.log[-train_id.log,]
+
+head(train.log)
+dim(train.log) # 3221   58
+head(test.log)
+dim(test.log) # 1380   58
+
 #######################################################
 # Model Build -- Fit Model Suite
 #######################################################
@@ -303,24 +315,28 @@ dim(test) # 1380   58
 
 # (1) a logistic regression model using variable selection
 
-# Model A
-# Use backward subset selection on model.logit
-model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=57, method="backward")
+# Backward train
+model.logit.bwd <- regsubsets(y ~ ., data = train, nvmax=NULL, method="backward")
 options(max.print=1000000)
 summary(model.logit.bwd)
 names(model.logit.bwd) # Is there a metric that lets me see which is best?
-summary.regsubsets(model.logit.bwd)
 #which.min(model.logit.bwd$rss) # 58 
 #model.logit.bwd$rss[58] # 330.9772
 
-# Model B
-# Use stepwise subset selection on model.logit
+# Forward train
+model.logit.fwd <- regsubsets(y ~ ., data = train, nvmax=NULL, method="forward")
+options(max.print=1000000)
+summary(model.logit.fwd) # chooses the same top 15+ variables as bwd
+
+# Stepwise train
 model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
 options(max.print=1000000)
 summary(model.logit.step)
-names(model.logit.step) # Is there a metric that lets me see which is best?
-#which.min(model.logit.step$rss) # 58 
-#model.logit.step$rss[58] # 330.9772
+
+# Stepwise train
+model.logit.step <- regsubsets(y ~ ., data = train, nvmax=NULL, method="seqrep")
+options(max.print=1000000)
+summary(model.logit.step)
 
 # Model C
 logit.control <- trainControl(classProbs = T, savePred = T , verboseIter = T)
