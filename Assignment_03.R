@@ -472,10 +472,6 @@ model.logit.step2.pred <- predict(model.logit.step2, newdata = train,
 length(model.logit.step2.pred) # 3221
 head(model.logit.step2.pred)
 
-model.logit.step2.pred2 <- predict(model.logit.step2, newdata = train)
-dim(model.logit.step2.pred2) 
-head(model.logit.step2.pred2)
-
 # Plot ROC curve
 set.seed(123)
 model.logit.step2.roc <- plot.roc(train$y, model.logit.step2.pred)
@@ -483,12 +479,14 @@ model.logit.step2.auc <- model.logit.step2.roc$auc
 model.logit.step2.auc # Area under the curve: 0.9781
 
 par(pty = "s") # "s" generates a square plotting region
-plot(model.logit.step2.roc, col = "steelblue", main = "ROC Curve")
-par(pty = "m") # "m" generates the maximal plotting region.
+plot(model.logit.step2.roc, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
+par(pty = "m") # "m" generates the maximal plotting region
 
-# Predict train
+# Predict train for confusion matrix
 set.seed(123)
 model.logit.step2.pred2 <- predict(model.logit.step2, newdata = train) # no type = "prob"
+dim(model.logit.step2.pred2)
+head(model.logit.step2.pred2)
 set.seed(123)
 model.logit.step2.cmat <- confusionMatrix(model.logit.step2.pred2, train$y)
 model.logit.step2.cmat
@@ -519,6 +517,7 @@ model.logit.step2.cmat
 # Predict test
 set.seed(123)
 model.logit.step2.pred.test <- predict(model.logit.step2, newdata = test)
+
 set.seed(123)
 model.logit.step2.cmat.test <- confusionMatrix(model.logit.step2.pred.test, test$y)
 model.logit.step2.cmat.test
@@ -558,13 +557,56 @@ model.logit.step2.cmat.test
 # Model A
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-fit2 <- rpart(y ~ ., data = train)
-fit2
+model.tree <- rpart(y ~ ., data = train)
+model.tree
 proc.time() - ptm # Stop the clock
 
 dev.new(width=10, height=8) # This fixes the tiny font issue
-fit2_plot <- fancyRpartPlot(fit2, sub = "") # The font is very small without the above code
+model.tree_plot <- fancyRpartPlot(model.tree, sub = "") # The font is very small without the above code
 dev.off()
+
+# Predict train
+set.seed(123)
+model.tree.pred <- predict(model.tree, newdata = train, 
+                                  type = "prob")[,2]
+length(model.tree.pred) # 3221
+head(model.tree.pred)
+
+# Plot ROC curve
+set.seed(123)
+model.tree.roc <- plot.roc(train$y, model.tree.pred)
+model.tree.auc <- model.tree.roc$auc
+model.tree.auc # Area under the curve: 0.9223
+
+par(pty = "s") # "s" generates a square plotting region
+plot(model.tree.roc, col = "steelblue", main = "ROC Curve for Tree Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+model.tree.pred2 <- predict(model.tree, newdata = train, type = "class")
+length(model.tree.pred) # 3221
+head(model.tree.pred) # This needs to show just Spam or Not_Spam
+set.seed(123)
+model.tree.cmat <- confusionMatrix(model.tree.pred2, train$y)
+model.tree.cmat
+#Error in confusionMatrix.default(model.tree.pred.test, test$y) : 
+#  the data cannot have more levels than the reference
+
+# Predict test
+set.seed(123)
+model.tree.pred.test <- predict(model.tree, newdata = test)
+set.seed(123)
+model.tree.cmat.test <- confusionMatrix(model.tree.pred.test, test$y)
+model.tree.cmat.test
+
+
+
+
+
+
+
+
 
 # Model B
 ptm <- proc.time() # Start the clock!
