@@ -147,13 +147,13 @@ str(data)
 1813/4601 # 0.3940448 are spam
 
 # Create log transformations of all predictors
-#pred.log <- lapply(data[1:57], log)
-#pred.log <- data.frame(pred.log, y = data$y)
-#head(pred.log) # has -Inf
+#pred.log1 <- lapply(data[1:57], log)
+#pred.log1 <- data.frame(pred.log1, y = data$y)
+#head(pred.log1) # has -Inf, doesn't work well in plots
 
-pred.log2 <- lapply(data[1:57], log1p)
-pred.log2 <- data.frame(pred.log2, y = data$y)
-head(pred.log2)
+pred.log <- lapply(data[1:57], log1p)
+pred.log <- data.frame(pred.log, y = data$y)
+head(pred.log)
 
 summary(data)
 
@@ -198,43 +198,42 @@ for (i in 1:57){
     box.rectangle = list(col= "black", fill = "steelblue")),
     strip = strip.custom(bg="lightgrey"),
     xlab = names(df)[i])
-  print(p)
+  print(p)}
 }
-}
+
 plot_box(data)
-plot_box(pred.log2)
+# capital_run_length_total, usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, email, business, free, people, receive, mail, order, internet, remove, over, our, all, address, make
+plot_box(pred.log) # easier to see patterns
+# usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, you, email, business, free, receive, mail, order, internet, remove, over, our, all, address, make
+# spam: make, address, all, our, over, remove, internet, order, mail, receive, people, free, business, email, your, you, 000, money, exclamation, usd
+# spam: free, money, exclamation
+# not_spam: hp, george, re
+# not_spam: hp, hpl, george, 1999, re
 
+# your, capital_run_length_average, capital_run_length_longest
 
-plotsAlog <- lapply(colnames(pred.log2[1:24]), plot_box, data = pred.log2)
-length(plotsAlog)
-do.call("grid.arrange", c(plotsAlog, ncol=4))
+lat.box <- function(variable){
+  toPlot = paste0("~ ", variable, " | y")
+  bwplot(as.formula(toPlot), data = pred.log,
+               layout = c(2, 1),
+              par.settings = list(
+                 box.umbrella=list(col= "black"), 
+                 box.dot=list(col= "black"), 
+                 box.rectangle = list(col= "black", fill = "steelblue")),
+               strip = strip.custom(bg="lightgrey"),
+         xlab = paste0(variable))}
 
-
-# Create boxplots for all predictor variables except carat
-for (i in 1:57){
-  toPlot = paste0("y ~ ", names(data)[i])
-  p <- bwplot(as.formula(toPlot), data = data, par.settings = list(
-    box.umbrella=list(col= "black"), 
-    box.dot=list(col= "black"), 
-    box.rectangle = list(col= "black", fill = "steelblue")),
-    xlab = names(data)[i])
-  print(p)
-}
-
-# Create boxplots for all predictor variables except carat
-for (i in 1:57){
-  toPlot = paste0("y ~ ", names(pred.log2)[i])
-  p <- bwplot(as.formula(toPlot), data = pred.log2, par.settings = list(
-    box.umbrella=list(col= "black"), 
-    box.dot=list(col= "black"), 
-    box.rectangle = list(col= "black", fill = "steelblue")),
-    xlab = names(pred.log2)[i])
-  print(p)
-}
-
-plotsA.box <- lapply(colnames(pred.log2[1:24]), plot_box, data = pred.log2)
+plotsA.box <- lapply(colnames(pred.log[c(16,24,52)]), FUN=lat.box)
 length(plotsA.box)
-do.call("grid.arrange", c(plotsA.box, ncol=4))
+do.call("grid.arrange", c(plotsA.box, ncol=3))
+
+bwplot(~ pred.log$money | y, data = pred.log,
+       layout = c(2, 1),
+       par.settings = list(
+         box.umbrella=list(col= "black"), 
+         box.dot=list(col= "black"), 
+         box.rectangle = list(col= "black", fill = "steelblue")),
+       strip = strip.custom(bg="lightgrey"))
 
 
 #plotsF <- lapply(data[55:57], FUN=plot_box)
