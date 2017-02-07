@@ -184,50 +184,18 @@ plotsD <- lapply(colnames(data[55:57]), plot_vars, data = data)
 length(plotsD)
 do.call("grid.arrange", c(plotsD, ncol=3))
 
-# Create box plots of each predictor according to response -- How do I automatically arrange the plots into a grid?
-plot_box <- function (df){
-for (i in 1:57){
-  toPlot = paste0("~ ", names(df)[i], " | y")
-  p <- bwplot(as.formula(toPlot), data = df, par.settings = list(
-    box.umbrella=list(col= "black"), 
-    box.dot=list(col= "black"), 
-    box.rectangle = list(col= "black", fill = "steelblue")),
-    strip = strip.custom(bg="lightgrey"),
-    xlab = names(df)[i])
-  print(p)}
+# Create histograms for all predictor variables
+myHist <- function(variable, df){
+  toPlot = paste0("~ ", variable)
+  histogram(as.formula(toPlot), data = df, col = "steelblue",  xlab = paste0(variable))
 }
 
-plot_box(data)
-# capital_run_length_total, usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, email, business, free, people, receive, mail, order, internet, remove, over, our, all, address, make
-plot_box(pred.log) # easier to see patterns
-# usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, you, email, business, free, receive, mail, order, internet, remove, over, our, all, address, make
-# spam: make, address, all, our, over, remove, internet, order, mail, receive, people, free, business, email, your, you, 000, money, exclamation, usd
-# spam: free, money, exclamation
-# not_spam: hp, george, re
-# not_spam: hp, hpl, george, 1999, re
+hist.overview <- lapply(colnames(pred.log[1:24]), myHist, pred.log) # [1:57] is unreadable
+length(hist.overview)
+do.call("grid.arrange", c(hist.overview, ncol=6))
 
-# your, capital_run_length_average, capital_run_length_longest
-
-lat.box <- function(variable){
-  toPlot = paste0("~ ", variable, " | y")
-  bwplot(as.formula(toPlot), data = pred.log,
-               layout = c(2, 1),
-              par.settings = list(
-                 box.umbrella=list(col= "black"), 
-                 box.dot=list(col= "black"), 
-                 box.rectangle = list(col= "black", fill = "steelblue")),
-               strip = strip.custom(bg="lightgrey"),
-         xlab = paste0(variable))}
-
-plotsA.box <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), lat.box)
-length(plotsA.box)
-do.call("grid.arrange", c(plotsA.box, ncol=3))
-
-plotsB.box <- lapply(colnames(pred.log[1:57]), lat.box)
-length(plotsB.box)
-do.call("grid.arrange", c(plotsB.box, ncol=3))
-
-lat.box2 <- function(variable, df){
+# Create box plots of each predictor according to response
+myBoxplots <- function(variable, df){
   toPlot = paste0("~ ", variable, " | y")
   bwplot(as.formula(toPlot), data = df,
          layout = c(2, 1),
@@ -238,11 +206,20 @@ lat.box2 <- function(variable, df){
          strip = strip.custom(bg="lightgrey"),
          xlab = paste0(variable))}
 
-plotsC.box <- lapply(colnames(pred.log[1:9]), lat.box2, pred.log)
-length(plotsC.box)
-do.call("grid.arrange", c(plotsC.box, ncol=3))
+# easier to see patterns in pred.log than data
+plots.overview <- lapply(colnames(pred.log[1:24]), myBoxplots, pred.log) # [1:57] is unreadable
+length(plots.overview)
+do.call("grid.arrange", c(plots.overview, ncol=6))
 
-plots.report <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), lat.box2, pred.log)
+# Interesting Spam v. Not_Span differences: capital_run_length_total, usd, exclamation, re, 1999, george, hpl, hp, money, 000, your, email, business, free, people, receive, mail, order, internet, remove, over, our, all, address, make
+# spam: make, address, all, our, over, remove, internet, order, mail, receive, people, free, business, email, your, you, 000, money, exclamation, usd
+# not_spam: hp, hpl, george, 1999, re
+# for plots in report:
+# spam: free, money, exclamation
+# not_spam: hp, george, re
+# your, capital_run_length_average, capital_run_length_longest
+
+plots.report <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), myBoxplots, pred.log)
 length(plots.report)
 do.call("grid.arrange", c(plots.report, ncol=3))
 
@@ -651,3 +628,38 @@ res.best.logistic <- bestglm(Xy = train,
                              IC = "AIC",                 # Information criteria for
                              method = "seqrep")
 res.best.logistic$BestModels
+
+#--------# Discarded Functions #--------#
+plot_box <- function (df){
+  for (i in 1:57){
+    toPlot = paste0("~ ", names(df)[i], " | y")
+    p <- bwplot(as.formula(toPlot), data = df, par.settings = list(
+      box.umbrella=list(col= "black"), 
+      box.dot=list(col= "black"), 
+      box.rectangle = list(col= "black", fill = "steelblue")),
+      strip = strip.custom(bg="lightgrey"),
+      xlab = names(df)[i])
+    print(p)}
+}
+
+plot_box(data)
+
+lat.box <- function(variable){
+  toPlot = paste0("~ ", variable, " | y")
+  bwplot(as.formula(toPlot), data = pred.log,
+         layout = c(2, 1),
+         par.settings = list(
+           box.umbrella=list(col= "black"), 
+           box.dot=list(col= "black"), 
+           box.rectangle = list(col= "black", fill = "steelblue")),
+         strip = strip.custom(bg="lightgrey"),
+         xlab = paste0(variable))}
+
+plotsA.box <- lapply(colnames(pred.log[c(16,24,52,25,27,45,21,55,56)]), lat.box)
+length(plotsA.box)
+do.call("grid.arrange", c(plotsA.box, ncol=3))
+
+plotsB.box <- lapply(colnames(pred.log[1:57]), lat.box)
+length(plotsB.box)
+do.call("grid.arrange", c(plotsB.box, ncol=3))
+
