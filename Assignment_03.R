@@ -41,7 +41,8 @@ list.of.packages <- c("doBy"
                       ,"plyr"
                       ,"dplyr"
                       ,"car"
-                      ,"pROC")
+                      ,"pROC"
+                      ,"bestglm")
 
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -307,6 +308,8 @@ dim(test.log) # 1380   58
 # Model Build -- Fit Model Suite
 #######################################################
 
+# (1) a logistic regression model using variable selection -- how to determine best model from regsubsets()?
+
 # First set completely naive logistic model without using variable selection
 #set.seed(123)
 #model.logit <- glm(y ~ ., data = train, family=binomial("logit"))
@@ -314,7 +317,8 @@ dim(test.log) # 1380   58
 #  glm.fit: fitted probabilities numerically 0 or 1 occurred 
 #summary(model.logit)
 
-# (1) a logistic regression model using variable selection
+install.packages("bestglm")
+library(bestglm)
 
 # Backward train
 set.seed(123)
@@ -325,6 +329,9 @@ names(model.logit.bwd) # Is there a metric that lets me see which is best?
 #which.min(model.logit.bwd$rss) # 58 
 #model.logit.bwd$rss[58] # 330.9772
 #plot(model.logit.bwd, scale="bic")
+
+args(bestglm)
+bestglm(train, IC = "AIC", method = "backward")
 
 # Forward train
 set.seed(123)
@@ -386,6 +393,8 @@ summary(model.logit.step.fit2)
 #Residual deviance: 1949.1  on 3210  degrees of freedom
 #AIC: 1971.1
 #Number of Fisher Scoring iterations: 9
+
+#--------#
 
 # Method using train() on train -- long process time (1+ hours)
 # Another stepwise method that identifies which is best:
@@ -741,9 +750,13 @@ model.svm.CV$finalModel
 #Training error : 0.044396 
 #Probability model included. 
 
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+proc.time() - ptm # Stop the clock
+
 # -------------------------------------------------------------------------#
-# (4) Random Forest
-# Model A
+# (4) Random Forest -- rf_random.fit is best
+# Create matrix
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 train.matrix  <- model.matrix(y ~ ., data=train)[,-58] # create predictor matrix (subtract last column, the response variable)
@@ -751,6 +764,7 @@ proc.time() - ptm # Stop the clock
 ncol(train.matrix) # 57
 head(train.matrix)
 
+# Create base model
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 # mtry can be 57 at most because of number of columns in train.matrix
@@ -765,7 +779,7 @@ rf_baseline
 #Not_Spam     1901   57  0.02911134
 #Spam           96 1167  0.07600950
 
-# Random Search
+# Create random search RF model
 set.seed(123)
 control.rf <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
 mtry <- sqrt(ncol(train.matrix)) # 7.549834
@@ -774,7 +788,7 @@ set.seed(123)
 rf_random <- train(train.matrix, train$y, method="rf", metric="Accuracy", trControl=control.rf) # removed tuneLength=15
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#893.115   9.903 903.818 
+#920.585   7.467 928.652 
 
 print(rf_random)
 #3221 samples
@@ -794,73 +808,116 @@ print(rf_random)
 #Accuracy was used to select the optimal model using  the largest value.
 #The final value used for the model was mtry = 11.
 
-
-
-
-
-
-
-
-
-
-#3221 samples
-#57 predictor
-#2 classes: 'Not_Spam', 'Spam'
-#No pre-processing
-#Resampling: Cross-Validated (10 fold, repeated 3 times) 
-#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
-#Resampling results across tuning parameters:
-  
-#  mtry  Accuracy   Kappa    
-#1    0.9086204  0.8020479
-#6    0.9528087  0.9004815
-#11    0.9517696  0.8983503
-#12    0.9510456  0.8968460
-#15    0.9501143  0.8949502
-#19    0.9498037  0.8943007
-#21    0.9498066  0.8943489
-#33    0.9476317  0.8897121
-#38    0.9469074  0.8882671
-#39    0.9469064  0.8881823
-#41    0.9471138  0.8886953
-#42    0.9475282  0.8895919
-#50    0.9459751  0.8862731
-#56    0.9457684  0.8858360
-
-#Accuracy was used to select the optimal model using  the largest value.
-#The final value used for the model was mtry = 6.
-
 #plot(rf_random)
+
+# Fit rf_random--performs only slightly better than base model
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-fit4 <- randomForest(train.matrix, train$y, mtry=6, importance=TRUE)
+rf_random.fit <- randomForest(train.matrix, train$y, mtry=11, importance=TRUE)
 proc.time() - ptm # Stop the clock
-fit4 # run rf_random again when I have time since the fit4 output changed
-# results on 2/3
+#user  system elapsed 
+#20.587   0.193  21.130
+
+rf_random.fit
 #Number of trees: 500
-#No. of variables tried at each split: 6
-#OOB estimate of  error rate: 4.59%
+#No. of variables tried at each split: 11
+#OOB estimate of  error rate: 4.72%
 #Confusion matrix:
 #         Not_Spam Spam class.error
-#Not_Spam     1901   57  0.02911134
-#Spam           91 1172  0.07205067
+#Not_Spam     1894   64  0.03268641
+#Spam           88 1175  0.06967538
 
-# results on 2/4
-#Number of trees: 500
-#No. of variables tried at each split: 6
-#OOB estimate of  error rate: 4.75%
-#Confusion matrix:
-#         Not_Spam Spam class.error
-#Not_Spam     1901   57  0.02911134
-#Spam           96 1167  0.07600950
-
-ptm <- proc.time() # Start the clock!
+# Predict train
 set.seed(123)
-fit4a <- randomForest(train.matrix, train$y, mtry=24, importance=TRUE)
-fit4a # OOB estimate of  error rate: 5.06%
-proc.time() - ptm # Stop the clock
+rf_random.fit.pred <- predict(rf_random.fit, newdata = train.matrix, 
+                         type = "prob")[,2]
+length(rf_random.fit.pred) # 3221
+head(rf_random.fit.pred)
 
-# RF train using train()
+# Plot ROC curve
+set.seed(123)
+rf_random.fit.roc <- plot.roc(train$y, rf_random.fit.pred)
+rf_random.fit.auc <- rf_random.fit.roc$auc
+rf_random.fit.auc # Area under the curve: 0.9993
+
+par(pty = "s") # "s" generates a square plotting region
+plot(rf_random.fit.roc, col = "steelblue", main = "ROC Curve for Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+rf_random.fit.pred2 <- predict(rf_random.fit, newdata = train.matrix) # no type = "prob"
+dim(rf_random.fit.pred2)
+head(rf_random.fit.pred2)
+set.seed(123)
+rf_random.fit.cmat <- confusionMatrix(rf_random.fit.pred2, train$y)
+rf_random.fit.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    3
+#Spam            1 1260
+
+#Accuracy : 0.9988          
+#95% CI : (0.9968, 0.9997)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : <2e-16          
+
+#Kappa : 0.9974          
+#Mcnemar's Test P-Value : 0.6171          
+
+#Sensitivity : 0.9995          
+#Specificity : 0.9976          
+#Pos Pred Value : 0.9985          
+#Neg Pred Value : 0.9992          
+#Prevalence : 0.6079          
+#Detection Rate : 0.6076          
+#Detection Prevalence : 0.6085          
+#Balanced Accuracy : 0.9986          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+# For test predictions, must create test.matrix
+set.seed(123)
+test.matrix <- model.matrix(y ~ ., data=test)[,-58]
+ncol(test.matrix) # 57
+head(test.matrix)
+
+set.seed(123)
+rf_random.fit.pred.test <- predict(rf_random.fit, newdata = test.matrix)
+
+set.seed(123)
+rf_random.fit.cmat.test <- confusionMatrix(rf_random.fit.pred.test, test$y)
+rf_random.fit.cmat.test
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      808   51
+#Spam           22  499
+
+#Accuracy : 0.9471          
+#95% CI : (0.9339, 0.9583)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8887          
+#Mcnemar's Test P-Value : 0.001049        
+
+#Sensitivity : 0.9735          
+#Specificity : 0.9073          
+#Pos Pred Value : 0.9406          
+#Neg Pred Value : 0.9578          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5855          
+#Detection Prevalence : 0.6225          
+#Balanced Accuracy : 0.9404          
+
+#'Positive' Class : Not_Spam 
+
+#--------#
+
+# Create RF train using train()
 ptm <- proc.time() # Start the clock!
 rf.control.cvr <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = T, savePred = T, verboseIter = T)
 proc.time() - ptm # Stop the clock
@@ -871,7 +928,17 @@ model.rf <- train(y ~ ., data = train, method = "rf", trControl = rf.control.cvr
 #Fitting mtry = 29 on full training set
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#920.585   7.467 928.652
+#893.115   9.903 903.818
+
+model.rf$finalModel # performs worse than randomForest() method
+#Number of trees: 500
+#No. of variables tried at each split: 29
+
+#OOB estimate of  error rate: 5.03%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1892   66  0.03370787
+#Spam           96 1167  0.07600950
 
 # Predict train
 set.seed(123)
@@ -1186,6 +1253,52 @@ precision(train, train$y, model.logit.step2.pred) # 0
 sensitivity(train, train$y, model.logit.step2.pred) # NaN
 specificity(train, train$y, model.logit.step2.pred) # 0.9971831
 f1.score(train, train$y, model.logit.step2.pred) # NaN
+
+
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam'
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+
+#  mtry  Accuracy   Kappa    
+#1    0.9086204  0.8020479
+#6    0.9528087  0.9004815
+#11    0.9517696  0.8983503
+#12    0.9510456  0.8968460
+#15    0.9501143  0.8949502
+#19    0.9498037  0.8943007
+#21    0.9498066  0.8943489
+#33    0.9476317  0.8897121
+#38    0.9469074  0.8882671
+#39    0.9469064  0.8881823
+#41    0.9471138  0.8886953
+#42    0.9475282  0.8895919
+#50    0.9459751  0.8862731
+#56    0.9457684  0.8858360
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 6.
+
+# rf_random.fit results on 2/3
+#Number of trees: 500
+#No. of variables tried at each split: 6
+#OOB estimate of  error rate: 4.59%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1901   57  0.02911134
+#Spam           91 1172  0.07205067
+
+# rf_random.fit results on 2/4
+#Number of trees: 500
+#No. of variables tried at each split: 6
+#OOB estimate of  error rate: 4.75%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1901   57  0.02911134
+#Spam           96 1167  0.07600950
 
 
 
