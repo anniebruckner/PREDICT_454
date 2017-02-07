@@ -1113,7 +1113,8 @@ model.svm.CV.cmat.test
 
 
 ### Do above code using log train and log test sets?
-#--------# Using train and test log of predictors #--------# 
+#--------# Using train and test log of predictors #--------#
+
 # Model using train()
 ptm <- proc.time() # Start the clock!
 svm.control.log <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
@@ -1554,6 +1555,129 @@ model.rf.cmat.test
 
 
 ### Do above code using log train and log test sets?
+#--------# Using train and test log of predictors #--------#
+# Create matrix
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+train.matrix.log  <- model.matrix(y ~ ., data=train.log)[,-58] # create predictor matrix (subtract last column, the response variable)
+proc.time() - ptm # Stop the clock
+ncol(train.matrix.log) # 57
+head(train.matrix.log)
+
+# Create random search RF model
+set.seed(123)
+control.rf.log <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+mtry.log <- sqrt(ncol(train.matrix.log)) # 7.549834
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random.log <- train(train.matrix.log, train.log$y, method="rf", metric="Accuracy", trControl=control.rf) # removed tuneLength=15
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#920.585   7.467 928.652 
+
+print(rf_random)
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+
+#  mtry  Accuracy   Kappa    
+#11    0.9509428  0.8966325
+#33    0.9477356  0.8899661
+#56    0.9460780  0.8864958
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 11.
+
+plot(rf_random)
+
+# Fit rf_random--performs only slightly better than base model
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random.fit <- randomForest(train.matrix, train$y, mtry=11, importance=TRUE)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#20.587   0.193  21.130
+
+rf_random.fit
+#Number of trees: 500
+#No. of variables tried at each split: 11
+#OOB estimate of  error rate: 4.72%
+#Confusion matrix:
+#         Not_Spam Spam class.error
+#Not_Spam     1894   64  0.03268641
+#Spam           88 1175  0.06967538
+
+varImpPlot(rf_random.fit, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+# Predict train
+set.seed(123)
+rf_random.fit.pred <- predict(rf_random.fit, newdata = train.matrix, 
+                              type = "prob")[,2]
+length(rf_random.fit.pred) # 3221
+head(rf_random.fit.pred)
+
+# Plot ROC curve
+set.seed(123)
+rf_random.fit.roc <- plot.roc(train$y, rf_random.fit.pred)
+rf_random.fit.auc <- rf_random.fit.roc$auc
+rf_random.fit.auc # Area under the curve: 0.9993
+
+par(pty = "s") # "s" generates a square plotting region
+plot(rf_random.fit.roc, col = "steelblue", main = "ROC Curve for Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+rf_random.fit.pred2 <- predict(rf_random.fit, newdata = train.matrix) # no type = "prob"
+dim(rf_random.fit.pred2)
+head(rf_random.fit.pred2)
+set.seed(123)
+rf_random.fit.cmat <- confusionMatrix(rf_random.fit.pred2, train$y)
+rf_random.fit.cmat
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    3
+#Spam            1 1260
+
+#Accuracy : 0.9988          
+#95% CI : (0.9968, 0.9997)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : <2e-16          
+
+#Kappa : 0.9974          
+#Mcnemar's Test P-Value : 0.6171          
+
+#Sensitivity : 0.9995          
+#Specificity : 0.9976          
+#Pos Pred Value : 0.9985          
+#Neg Pred Value : 0.9992          
+#Prevalence : 0.6079          
+#Detection Rate : 0.6076          
+#Detection Prevalence : 0.6085          
+#Balanced Accuracy : 0.9986          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+# For test predictions, must create test.matrix
+set.seed(123)
+test.matrix <- model.matrix(y ~ ., data=test)[,-58]
+ncol(test.matrix) # 57
+head(test.matrix)
+
+set.seed(123)
+rf_random.fit.pred.test <- predict(rf_random.fit, newdata = test.matrix)
+
+set.seed(123)
+rf_random.fit.cmat.test <- confusionMatrix(rf_random.fit.pred.test, test$y)
+rf_random.fit.cmat.test
+
 
 
 #######################################################
