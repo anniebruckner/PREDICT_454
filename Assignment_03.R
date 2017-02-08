@@ -1863,7 +1863,7 @@ rf_random.fit.cmat.test.log
 
 #'Positive' Class : Not_Spam
 
-### 
+### RF REDO ###
 # Create random search RF model
 set.seed(123)
 control.rf.log2 <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
@@ -1872,88 +1872,76 @@ set.seed(123)
 rf_random.log2 <- train(y ~ ., data = train.log, method="rf", metric="Accuracy", trControl=control.rf.log2)
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#908.166   9.126 917.743 
+#307.007   5.260 313.125 
 
 print(rf_random.log2)
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+  
+#  mtry  Accuracy   Kappa    
+#2    0.9444183  0.8823264
+#29    0.9490681  0.8927783
+#57    0.9447231  0.8836496
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 29.
 
 plot(rf_random.log2)
+rf_random.log2$finalModel
+#Number of trees: 500
+#No. of variables tried at each split: 29
+#OOB estimate of  error rate: 5.06%
+#Confusion matrix:
+#  Not_Spam Spam class.error
+#Not_Spam     1892   66  0.03370787
+#Spam           97 1166  0.07680127
 
 # Fit rf_random.log2
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-rf_random.fit.log2 <- randomForest(train.matrix.log, train.log$y, mtry=11, importance=TRUE)
+rf_random.fit.log2 <- randomForest(y ~ ., data = train.log, mtry=29, importance=TRUE)
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#20.483   0.208  20.738
 
-rf_random.fit.log
-#Number of trees: 500
-#No. of variables tried at each split: 11
-#OOB estimate of  error rate: 4.72%
-#Confusion matrix:
-#         Not_Spam Spam class.error
-#Not_Spam     1896   62  0.03166496
-#Spam           90 1173  0.07125891
 
-varImpPlot(rf_random.fit.log, main = "log Random Forest Model: \n Variable Importance") # How to do in Lattice?
+rf_random.fit.log2
+
+varImpPlot(rf_random.fit.log2, main = "Log Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
 # Predict train
 set.seed(123)
-rf_random.fit.pred.log <- predict(rf_random.fit.log, newdata = train.matrix.log, 
+rf_random.fit.pred.log2 <- predict(rf_random.fit.log2, newdata = train.log, 
                                   type = "prob")[,2]
-length(rf_random.fit.pred.log) # 3221
-head(rf_random.fit.pred.log)
+length(rf_random.fit.pred.log2) # 3221
+head(rf_random.fit.pred.log2)
 
 # Plot ROC curve
 set.seed(123)
-rf_random.fit.roc.log <- plot.roc(train.log$y, rf_random.fit.pred.log)
-rf_random.fit.auc.log <- rf_random.fit.roc.log$auc
-rf_random.fit.auc.log # Area under the curve: 0.9993
+rf_random.fit.roc.log2 <- plot.roc(train.log2$y, rf_random.fit.pred.log2)
+rf_random.fit.auc.log2 <- rf_random.fit.roc.log2$auc
+rf_random.fit.auc.log2 # Area under the curve: 0.9993
 
 par(pty = "s") # "s" generates a square plotting region
-plot(rf_random.fit.roc.log, col = "steelblue", main = "ROC Curve for log Random Forest Model")
+plot(rf_random.fit.roc.log2, col = "steelblue", main = "ROC Curve for log Random Forest Model")
 par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
 set.seed(123)
-rf_random.fit.pred2.log <- predict(rf_random.fit.log, newdata = train.matrix.log) # no type = "prob"
-dim(rf_random.fit.pred2.log)
-head(rf_random.fit.pred2.log)
+rf_random.fit.pred2.log2 <- predict(rf_random.fit.log2, newdata = train.log) # no type = "prob"
+dim(rf_random.fit.pred2.log2)
+head(rf_random.fit.pred2.log2)
 set.seed(123)
-rf_random.fit.cmat.log <- confusionMatrix(rf_random.fit.pred2.log, train.log$y)
-rf_random.fit.cmat.log
-#Confusion Matrix and Statistics
-#Reference
-#Prediction Not_Spam Spam -- This is very differnt from the automatic output
-#Not_Spam     1957    6
-#Spam            1 1257
+rf_random.fit.cmat.log2 <- confusionMatrix(rf_random.fit.pred2.log2, train.log$y)
+rf_random.fit.cmat.log2
 
-#Accuracy : 0.9978          
-#95% CI : (0.9955, 0.9991)
-#No Information Rate : 0.6079          
-#P-Value [Acc > NIR] : <2e-16          
-
-#Kappa : 0.9954          
-#Mcnemar's Test P-Value : 0.1306          
-
-#Sensitivity : 0.9995          
-#Specificity : 0.9952          
-#Pos Pred Value : 0.9969          
-#Neg Pred Value : 0.9992          
-#Prevalence : 0.6079          
-#Detection Rate : 0.6076          
-#Detection Prevalence : 0.6094          
-#Balanced Accuracy : 0.9974          
-
-#'Positive' Class : Not_Spam
 
 # Predict test
-# For test predictions, must create test.matrix.log
-set.seed(123)
-test.matrix.log <- model.matrix(y ~ ., data=test.log)[,-58]
-ncol(test.matrix.log) # 57
-head(test.matrix.log)
-
 set.seed(123)
 rf_random.fit.pred.test.log <- predict(rf_random.fit.log, newdata = test.matrix.log)
 
