@@ -565,6 +565,7 @@ model.logit.step2.cmat.test
 
 #--------# Using train and test log of predictors #--------#
 
+# Used this in report since it had a higher accuracy.
 ptm <- proc.time() # Start the clock!
 logit.control.log <- trainControl(classProbs = T, savePred = T , verboseIter = T)
 set.seed(123)
@@ -655,7 +656,7 @@ model.logit.step2.auc.log <- model.logit.step2.roc.log$auc
 model.logit.step2.auc.log # Area under the curve: 0.9847
 
 par(pty = "s") # "s" generates a square plotting region
-plot(model.logit.step2.roc.log, col = "steelblue", main = "ROC Curve for log Stepwise Logistic Regression Model")
+plot(model.logit.step2.roc.log, col = "steelblue", main = "ROC Curve for Stepwise Logistic Regression Model")
 par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
@@ -725,7 +726,7 @@ model.logit.step2.cmat.test.log
 
 
 # -------------------------------------------------------------------------#
-# (2) a tree model -- model.tree does way better than model.tree2
+# (2) a tree model -- used model.tree in report -- does way better than model.tree2
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.tree <- rpart(y ~ ., data = train)
@@ -735,6 +736,8 @@ proc.time() - ptm # Stop the clock
 dev.new(width=10, height=8) # This fixes the tiny font issue
 model.tree_plot <- fancyRpartPlot(model.tree, sub = "") # The font is very small without the above code
 dev.off()
+
+summary(model.tree)
 
 # Predict train
 set.seed(123)
@@ -1274,7 +1277,7 @@ model.svm.CV.cmat.test
 
 ### Do above code using log train and log test sets?
 #--------# Using train and test log of predictors #--------#
-
+## Used this for report
 # Model using train()
 ptm <- proc.time() # Start the clock!
 svm.control.log <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
@@ -1375,7 +1378,7 @@ model.svm.CV.auc.log <- model.svm.CV.roc.log$auc
 model.svm.CV.auc.log # Area under the curve: 0.9879
 
 par(pty = "s") # "s" generates a square plotting region
-plot(model.svm.CV.roc.log, col = "steelblue", main = "ROC Curve for log SVM Model")
+plot(model.svm.CV.roc.log, col = "steelblue", main = "ROC Curve for SVM Model")
 par(pty = "m") # "m" generates the maximal plotting region
 
 # Predict train for confusion matrix
@@ -1444,7 +1447,380 @@ model.svm.CV.cmat.test.log
 #'Positive' Class : Not_Spam
 
 # -------------------------------------------------------------------------#
-# (4) Random Forest -- rf_random.fit is best
+# (4) Random Forest -- rf_random2 is best
+
+### RF REDO ###
+# Create RF model
+set.seed(123)
+control.rf2 <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random2 <- train(y ~ ., data = train, method="rf", metric="Accuracy", trControl=control.rf2)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#311.292   6.069 319.117 
+
+print(rf_random2)
+#No pre-processing
+#Resampling: Cross-Validated (10 fold) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+
+#  mtry  Accuracy   Kappa    
+#2    0.9441010  0.8816122
+#29    0.9490710  0.8927715
+#57    0.9456548  0.8856470
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 29.
+
+plot(rf_random2)
+rf_random2$finalModel
+#Number of trees: 500
+#No. of variables tried at each split: 29
+
+#OOB estimate of  error rate: 4.78%
+#Confusion matrix:
+#  Not_Spam Spam class.error
+#Not_Spam     1898   60  0.03064351
+#Spam           94 1169  0.07442597
+
+# Fit rf_random2
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random2.fit <- randomForest(y ~ ., data = train, mtry=29, importance=TRUE)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+# 22.921   0.204  23.145 
+
+rf_random2.fit
+#Number of trees: 500
+#No. of variables tried at each split: 29
+
+#OOB estimate of  error rate: 4.97%
+#Confusion matrix:
+#  Not_Spam Spam class.error
+#Not_Spam     1892   66  0.03370787
+#Spam           94 1169  0.07442597
+
+varImpPlot(rf_random2.fit, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+varImpPlot(rf_random2$finalModel, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+# Predict train
+set.seed(123)
+rf_random2.pred <- predict(rf_random2, newdata = train, 
+                               type = "prob")[,2]
+length(rf_random2.pred) # 3221
+head(rf_random2.pred)
+
+# Plot ROC curve
+set.seed(123)
+rf_random2.roc <- plot.roc(train$y, rf_random2.pred)
+rf_random2.auc <- rf_random2.roc$auc
+rf_random2.auc # Area under the curve: 1
+
+par(pty = "s") # "s" generates a square plotting region
+plot(rf_random2.roc, col = "steelblue", main = "ROC Curve for Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+rf_random2.pred2 <- predict(rf_random2, newdata = train) # no type = "prob"
+dim(rf_random2.pred2)
+head(rf_random2.pred2)
+set.seed(123)
+rf_random2.cmat <- confusionMatrix(rf_random2.pred2, train$y)
+rf_random2.cmat
+#Confusion Matrix and Statistics
+
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    0
+#Spam            1 1263
+
+#Accuracy : 0.9997     
+#95% CI : (0.9983, 1)
+#No Information Rate : 0.6079     
+#P-Value [Acc > NIR] : <2e-16     
+
+#Kappa : 0.9993     
+#Mcnemar's Test P-Value : 1          
+
+#Sensitivity : 0.9995     
+#Specificity : 1.0000     
+#Pos Pred Value : 1.0000     
+#Neg Pred Value : 0.9992     
+#Prevalence : 0.6079     
+#Detection Rate : 0.6076     
+#Detection Prevalence : 0.6076     
+#Balanced Accuracy : 0.9997     
+
+#'Positive' Class : Not_Spam 
+
+# Predict test
+set.seed(123)
+rf_random2.pred.test <- predict(rf_random2, newdata = test)
+
+set.seed(123)
+rf_random2.cmat.test <- confusionMatrix(rf_random2.pred.test, test$y)
+rf_random2.cmat.test
+#Confusion Matrix and Statistics
+
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      807   59
+#Spam           23  491
+
+#Accuracy : 0.9406          
+#95% CI : (0.9268, 0.9525)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8747          
+#Mcnemar's Test P-Value : 0.000111        
+
+#Sensitivity : 0.9723          
+#Specificity : 0.8927          
+#Pos Pred Value : 0.9319          
+#Neg Pred Value : 0.9553          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5848          
+#Detection Prevalence : 0.6275          
+#Balanced Accuracy : 0.9325          
+
+#'Positive' Class : Not_Spam
+
+
+### RF LOG REDO ###
+# Create RF model
+set.seed(123)
+control.rf.log2 <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random.log2 <- train(y ~ ., data = train.log, method="rf", metric="Accuracy", trControl=control.rf.log2)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#307.007   5.260 313.125 
+
+print(rf_random.log2)
+#3221 samples
+#57 predictor
+#2 classes: 'Not_Spam', 'Spam' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold) 
+#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
+#Resampling results across tuning parameters:
+
+#  mtry  Accuracy   Kappa    
+#2    0.9444183  0.8823264
+#29    0.9490681  0.8927783
+#57    0.9447231  0.8836496
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 29.
+
+plot(rf_random.log2)
+rf_random.log2$finalModel
+#Number of trees: 500
+#No. of variables tried at each split: 29
+#OOB estimate of  error rate: 5.06%
+#Confusion matrix:
+#  Not_Spam Spam class.error
+#Not_Spam     1892   66  0.03370787
+#Spam           97 1166  0.07680127
+
+# Fit rf_random.log2
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+rf_random.fit.log2 <- randomForest(y ~ ., data = train.log, mtry=29, importance=TRUE)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#  23.080   0.232  23.418
+
+rf_random.fit.log2
+#Number of trees: 500
+#No. of variables tried at each split: 29
+#OOB estimate of  error rate: 4.84%
+#Confusion matrix:
+#  Not_Spam Spam class.error
+#Not_Spam     1896   62  0.03166496
+#Spam           94 1169  0.07442597
+
+varImpPlot(rf_random.fit.log2, main = "Log Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+# Predict train
+set.seed(123)
+rf_random.fit.pred.log2 <- predict(rf_random.fit.log2, newdata = train.log, 
+                                   type = "prob")[,2]
+length(rf_random.fit.pred.log2) # 3221
+head(rf_random.fit.pred.log2)
+
+# Plot ROC curve
+set.seed(123)
+rf_random.fit.roc.log2 <- plot.roc(train.log$y, rf_random.fit.pred.log2)
+rf_random.fit.auc.log2 <- rf_random.fit.roc.log2$auc
+rf_random.fit.auc.log2 # Area under the curve: 1
+
+par(pty = "s") # "s" generates a square plotting region
+plot(rf_random.fit.roc.log2, col = "steelblue", main = "ROC Curve for Log Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+rf_random.fit.pred2.log2 <- predict(rf_random.fit.log2, newdata = train.log) # no type = "prob"
+dim(rf_random.fit.pred2.log2)
+head(rf_random.fit.pred2.log2)
+set.seed(123)
+rf_random.fit.cmat.log2 <- confusionMatrix(rf_random.fit.pred2.log2, train.log$y)
+rf_random.fit.cmat.log2
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    1
+#Spam            1 1262
+
+#Accuracy : 0.9994          
+#95% CI : (0.9978, 0.9999)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : <2e-16          
+
+#Kappa : 0.9987          
+#Mcnemar's Test P-Value : 1               
+
+#Sensitivity : 0.9995          
+#Specificity : 0.9992          
+#Pos Pred Value : 0.9995          
+#Neg Pred Value : 0.9992          
+#Prevalence : 0.6079          
+#Detection Rate : 0.6076          
+#Detection Prevalence : 0.6079          
+#Balanced Accuracy : 0.9993          
+
+#'Positive' Class : Not_Spam
+
+# Predict test
+set.seed(123)
+rf_random.fit.pred.test.log2 <- predict(rf_random.fit.log2, newdata = test.log)
+
+set.seed(123)
+rf_random.fit.cmat.test.log2 <- confusionMatrix(rf_random.fit.pred.test.log2, test.log$y)
+rf_random.fit.cmat.test.log2
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      806   58
+#Spam           24  492
+
+#Accuracy : 0.9406          
+#95% CI : (0.9268, 0.9525)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8748          
+#Mcnemar's Test P-Value : 0.0002682       
+
+#Sensitivity : 0.9711          
+#Specificity : 0.8945          
+#Pos Pred Value : 0.9329          
+#Neg Pred Value : 0.9535          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5841          
+#Detection Prevalence : 0.6261          
+#Balanced Accuracy : 0.9328          
+
+#'Positive' Class : Not_Spam
+
+########
+### predicting based on train() rf_random.log2, not fit model--produces same results
+########
+
+varImpPlot(rf_random.log2$finalModel, main = "Log Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+# Predict train
+set.seed(123)
+rf_random.pred.log2 <- predict(rf_random.log2, newdata = train.log, 
+                               type = "prob")[,2]
+length(rf_random.pred.log2) # 3221
+head(rf_random.pred.log2)
+
+# Plot ROC curve
+set.seed(123)
+rf_random.roc.log2 <- plot.roc(train.log$y, rf_random.pred.log2)
+rf_random.auc.log2 <- rf_random.roc.log2$auc
+rf_random.auc.log2 # Area under the curve: 1
+
+par(pty = "s") # "s" generates a square plotting region
+plot(rf_random.roc.log2, col = "steelblue", main = "ROC Curve for Log Random Forest Model")
+par(pty = "m") # "m" generates the maximal plotting region
+
+# Predict train for confusion matrix
+set.seed(123)
+rf_random.pred2.log2 <- predict(rf_random.log2, newdata = train.log) # no type = "prob"
+dim(rf_random.pred2.log2)
+head(rf_random.pred2.log2)
+set.seed(123)
+rf_random.cmat.log2 <- confusionMatrix(rf_random.pred2.log2, train.log$y)
+rf_random.cmat.log2
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam     1957    1
+#Spam            1 1262
+
+#Accuracy : 0.9994          
+#95% CI : (0.9978, 0.9999)
+#No Information Rate : 0.6079          
+#P-Value [Acc > NIR] : <2e-16          
+
+#Kappa : 0.9987          
+#Mcnemar's Test P-Value : 1               
+
+#Sensitivity : 0.9995          
+#Specificity : 0.9992          
+#Pos Pred Value : 0.9995          
+#Neg Pred Value : 0.9992          
+#Prevalence : 0.6079          
+#Detection Rate : 0.6076          
+#Detection Prevalence : 0.6079          
+#Balanced Accuracy : 0.9993          
+
+#'Positive' Class : Not_Spam        
+
+
+# Predict test
+set.seed(123)
+rf_random.pred.test.log2 <- predict(rf_random.log2, newdata = test.log)
+
+set.seed(123)
+rf_random.cmat.test.log2 <- confusionMatrix(rf_random.pred.test.log2, test.log$y)
+rf_random.cmat.test.log2
+#Confusion Matrix and Statistics
+#Reference
+#Prediction Not_Spam Spam
+#Not_Spam      806   58
+#Spam           24  492
+
+#Accuracy : 0.9406          
+#95% CI : (0.9268, 0.9525)
+#No Information Rate : 0.6014          
+#P-Value [Acc > NIR] : < 2.2e-16       
+
+#Kappa : 0.8748          
+#Mcnemar's Test P-Value : 0.0002682       
+
+#Sensitivity : 0.9711          
+#Specificity : 0.8945          
+#Pos Pred Value : 0.9329          
+#Neg Pred Value : 0.9535          
+#Prevalence : 0.6014          
+#Detection Rate : 0.5841          
+#Detection Prevalence : 0.6261          
+#Balanced Accuracy : 0.9328          
+
+#'Positive' Class : Not_Spam
+
+#-------------------------------# Early Models #-------------------------------# 
 # Create matrix
 ptm <- proc.time() # Start the clock!
 set.seed(123)
@@ -1802,7 +2178,7 @@ rf_random.fit.cmat.log <- confusionMatrix(rf_random.fit.pred2.log, train.log$y)
 rf_random.fit.cmat.log
 #Confusion Matrix and Statistics
 #Reference
-#Prediction Not_Spam Spam -- This is very differnt from the automatic output
+#Prediction Not_Spam Spam -- This is very different from the automatic output
 #Not_Spam     1957    6
 #Spam            1 1257
 
@@ -1862,240 +2238,6 @@ rf_random.fit.cmat.test.log
 #Balanced Accuracy : 0.9428          
 
 #'Positive' Class : Not_Spam
-
-### RF REDO ###
-# Create RF model
-set.seed(123)
-control.rf.log2 <- trainControl(method = "cv", classProbs = T, savePred = T, verboseIter = T)
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-rf_random.log2 <- train(y ~ ., data = train.log, method="rf", metric="Accuracy", trControl=control.rf.log2)
-proc.time() - ptm # Stop the clock
-#user  system elapsed 
-#307.007   5.260 313.125 
-
-print(rf_random.log2)
-#3221 samples
-#57 predictor
-#2 classes: 'Not_Spam', 'Spam' 
-
-#No pre-processing
-#Resampling: Cross-Validated (10 fold) 
-#Summary of sample sizes: 2898, 2900, 2899, 2898, 2900, 2899, ... 
-#Resampling results across tuning parameters:
-  
-#  mtry  Accuracy   Kappa    
-#2    0.9444183  0.8823264
-#29    0.9490681  0.8927783
-#57    0.9447231  0.8836496
-
-#Accuracy was used to select the optimal model using  the largest value.
-#The final value used for the model was mtry = 29.
-
-plot(rf_random.log2)
-rf_random.log2$finalModel
-#Number of trees: 500
-#No. of variables tried at each split: 29
-#OOB estimate of  error rate: 5.06%
-#Confusion matrix:
-#  Not_Spam Spam class.error
-#Not_Spam     1892   66  0.03370787
-#Spam           97 1166  0.07680127
-
-# Fit rf_random.log2
-ptm <- proc.time() # Start the clock!
-set.seed(123)
-rf_random.fit.log2 <- randomForest(y ~ ., data = train.log, mtry=29, importance=TRUE)
-proc.time() - ptm # Stop the clock
-#user  system elapsed 
-# 23.190   0.253  23.511 
-
-rf_random.fit.log2
-#Number of trees: 500
-#No. of variables tried at each split: 29
-#OOB estimate of  error rate: 4.84%
-#Confusion matrix:
-#  Not_Spam Spam class.error
-#Not_Spam     1896   62  0.03166496
-#Spam           94 1169  0.07442597
-
-varImpPlot(rf_random.fit.log2, main = "Log Random Forest Model: \n Variable Importance") # How to do in Lattice?
-
-# Predict train
-set.seed(123)
-rf_random.fit.pred.log2 <- predict(rf_random.fit.log2, newdata = train.log, 
-                                  type = "prob")[,2]
-length(rf_random.fit.pred.log2) # 3221
-head(rf_random.fit.pred.log2)
-
-# Plot ROC curve
-set.seed(123)
-rf_random.fit.roc.log2 <- plot.roc(train.log$y, rf_random.fit.pred.log2)
-rf_random.fit.auc.log2 <- rf_random.fit.roc.log2$auc
-rf_random.fit.auc.log2 # Area under the curve: 1
-
-par(pty = "s") # "s" generates a square plotting region
-plot(rf_random.fit.roc.log2, col = "steelblue", main = "ROC Curve for Log Random Forest Model")
-par(pty = "m") # "m" generates the maximal plotting region
-
-# Predict train for confusion matrix
-set.seed(123)
-rf_random.fit.pred2.log2 <- predict(rf_random.fit.log2, newdata = train.log) # no type = "prob"
-dim(rf_random.fit.pred2.log2)
-head(rf_random.fit.pred2.log2)
-set.seed(123)
-rf_random.fit.cmat.log2 <- confusionMatrix(rf_random.fit.pred2.log2, train.log$y)
-rf_random.fit.cmat.log2
-#Confusion Matrix and Statistics
-#Reference
-#Prediction Not_Spam Spam
-#Not_Spam     1957    1
-#Spam            1 1262
-
-#Accuracy : 0.9994          
-#95% CI : (0.9978, 0.9999)
-#No Information Rate : 0.6079          
-#P-Value [Acc > NIR] : <2e-16          
-
-#Kappa : 0.9987          
-#Mcnemar's Test P-Value : 1               
-
-#Sensitivity : 0.9995          
-#Specificity : 0.9992          
-#Pos Pred Value : 0.9995          
-#Neg Pred Value : 0.9992          
-#Prevalence : 0.6079          
-#Detection Rate : 0.6076          
-#Detection Prevalence : 0.6079          
-#Balanced Accuracy : 0.9993          
-
-#'Positive' Class : Not_Spam
-
-# Predict test
-set.seed(123)
-rf_random.fit.pred.test.log2 <- predict(rf_random.fit.log2, newdata = test.log)
-
-set.seed(123)
-rf_random.fit.cmat.test.log2 <- confusionMatrix(rf_random.fit.pred.test.log2, test.log$y)
-rf_random.fit.cmat.test.log2
-#Confusion Matrix and Statistics
-#Reference
-#Prediction Not_Spam Spam
-#Not_Spam      806   58
-#Spam           24  492
-
-#Accuracy : 0.9406          
-#95% CI : (0.9268, 0.9525)
-#No Information Rate : 0.6014          
-#P-Value [Acc > NIR] : < 2.2e-16       
-
-#Kappa : 0.8748          
-#Mcnemar's Test P-Value : 0.0002682       
-
-#Sensitivity : 0.9711          
-#Specificity : 0.8945          
-#Pos Pred Value : 0.9329          
-#Neg Pred Value : 0.9535          
-#Prevalence : 0.6014          
-#Detection Rate : 0.5841          
-#Detection Prevalence : 0.6261          
-#Balanced Accuracy : 0.9328          
-
-#'Positive' Class : Not_Spam
-
-########
-### predicting based on train() rf_random.log2, not fit model--produces same results
-########
-
-varImpPlot(rf_random.log2$finalModel, main = "Log Random Forest Model: \n Variable Importance") # How to do in Lattice?
-
-# Predict train
-set.seed(123)
-rf_random.pred.log2 <- predict(rf_random.log2, newdata = train.log, 
-                                   type = "prob")[,2]
-length(rf_random.pred.log2) # 3221
-head(rf_random.pred.log2)
-
-# Plot ROC curve
-set.seed(123)
-rf_random.roc.log2 <- plot.roc(train.log$y, rf_random.pred.log2)
-rf_random.auc.log2 <- rf_random.roc.log2$auc
-rf_random.auc.log2 # Area under the curve: 1
-
-par(pty = "s") # "s" generates a square plotting region
-plot(rf_random.roc.log2, col = "steelblue", main = "ROC Curve for Log Random Forest Model")
-par(pty = "m") # "m" generates the maximal plotting region
-
-# Predict train for confusion matrix
-set.seed(123)
-rf_random.pred2.log2 <- predict(rf_random.log2, newdata = train.log) # no type = "prob"
-dim(rf_random.pred2.log2)
-head(rf_random.pred2.log2)
-set.seed(123)
-rf_random.cmat.log2 <- confusionMatrix(rf_random.pred2.log2, train.log$y)
-rf_random.cmat.log2
-#Confusion Matrix and Statistics
-#Reference
-#Prediction Not_Spam Spam
-#Not_Spam     1957    1
-#Spam            1 1262
-
-#Accuracy : 0.9994          
-#95% CI : (0.9978, 0.9999)
-#No Information Rate : 0.6079          
-#P-Value [Acc > NIR] : <2e-16          
-
-#Kappa : 0.9987          
-#Mcnemar's Test P-Value : 1               
-
-#Sensitivity : 0.9995          
-#Specificity : 0.9992          
-#Pos Pred Value : 0.9995          
-#Neg Pred Value : 0.9992          
-#Prevalence : 0.6079          
-#Detection Rate : 0.6076          
-#Detection Prevalence : 0.6079          
-#Balanced Accuracy : 0.9993          
-
-#'Positive' Class : Not_Spam        
-
-
-# Predict test
-set.seed(123)
-rf_random.pred.test.log2 <- predict(rf_random.log2, newdata = test.log)
-
-set.seed(123)
-rf_random.cmat.test.log2 <- confusionMatrix(rf_random.pred.test.log2, test.log$y)
-rf_random.cmat.test.log2
-#Confusion Matrix and Statistics
-#Reference
-#Prediction Not_Spam Spam
-#Not_Spam      806   58
-#Spam           24  492
-
-#Accuracy : 0.9406          
-#95% CI : (0.9268, 0.9525)
-#No Information Rate : 0.6014          
-#P-Value [Acc > NIR] : < 2.2e-16       
-
-#Kappa : 0.8748          
-#Mcnemar's Test P-Value : 0.0002682       
-
-#Sensitivity : 0.9711          
-#Specificity : 0.8945          
-#Pos Pred Value : 0.9329          
-#Neg Pred Value : 0.9535          
-#Prevalence : 0.6014          
-#Detection Rate : 0.5841          
-#Detection Prevalence : 0.6261          
-#Balanced Accuracy : 0.9328          
-
-#'Positive' Class : Not_Spam
-
-
-
-
-
 
 #######################################################
 # End
