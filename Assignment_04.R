@@ -318,17 +318,12 @@ importance(model.RF)
 varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
 control.rf <- trainControl(method = "repeatedcv",
-                             number = 10,
-                             repeats = 3,
-                             classProbs = T)
+                             number = 10, repeats = 3,
+                             classProbs = T, savePred = T, verboseIter = T)
 
-# Build model
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-model.rf <- train(x = wine[, -1],
-                   y = wine[, 1],
-                   method = "rf",
-                   trControl = control.rf)
+model.rf <- train(Class ~ ., data = wine, method="rf", trControl = control.rf)
 proc.time() - ptm # Stop the clock
 
 
