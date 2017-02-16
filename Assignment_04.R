@@ -307,5 +307,36 @@ importance(model.RF)
 varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
 #######################################################
+# Build Models
+#######################################################
+
+# (1) Random Forest
+
+# Create Random Forest model
+model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
+importance(model.RF)
+varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+
+control.rf <- trainControl(method = "repeatedcv",
+                             number = 10,
+                             repeats = 3,
+                             classProbs = T)
+
+# Build model
+ptm <- proc.time() # Start the clock!
+set.seed(123)
+model.rf <- train(x = wine[, -1],
+                   y = wine[, 1],
+                   method = "rf",
+                   trControl = control.rf)
+proc.time() - ptm # Stop the clock
+
+
+# (2) a Support Vector Machine
+
+
+# (3) a neural network model
+
+#######################################################
 # END
 #######################################################
