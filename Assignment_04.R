@@ -317,14 +317,70 @@ model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
 importance(model.RF)
 varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
+levels(wine$Class) <- c("class_1", "class_2", "class_3")
+# Did the above code because I was getting the following error when I ran the model:
+# Error in train.default(x, y, weights = w, ...) : 
+#At least one of the class levels is not a valid R variable name;
+#This will cause errors when class probabilities are generated because
+#the variables names will be converted to  X1, X2, X3 . Please use
+#factor levels that can be used as valid R variable names  (see ?make.names for help).
+
 control.rf <- trainControl(method = "repeatedcv",
                              number = 10, repeats = 3,
                              classProbs = T, savePred = T, verboseIter = T)
 
 ptm <- proc.time() # Start the clock!
 set.seed(123)
-model.rf <- train(Class ~ ., data = wine, method="rf", trControl = control.rf)
+model.rf <- train(x = wine[, -1], y = wine[, 1], data = wine, method="rf", trControl = control.rf)
+#    user  system elapsed 
+#9.330   0.469   9.872
+
+#model.rf2 <- train(Class ~ ., data = wine, method="rf", trControl = control.rf)
 proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#8.788   0.410   9.277
+
+print(model.rf) # model.rf and model.rf2 have the same results--just checking
+#178 samples
+#13 predictor
+#3 classes: 'class_1', 'class_2', 'class_3' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 160, 160, 161, 160, 162, 160, ... 
+#Resampling results across tuning parameters:
+  
+#  mtry  Accuracy   Kappa    
+#2    0.9866852  0.9798844
+#7    0.9775119  0.9660152
+#13    0.9661693  0.9486708
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 2.
+
+model.rf$finalModel
+#randomForest(x = x, y = y, mtry = param$mtry, data = ..1) 
+#Type of random forest: classification
+#Number of trees: 500
+#No. of variables tried at each split: 2
+
+#OOB estimate of  error rate: 1.12%
+#Confusion matrix:
+#  class_1 class_2 class_3 class.error
+#class_1      59       0       0  0.00000000
+#class_2       1      69       1  0.02816901
+#class_3       0       0      48  0.00000000
+
+model.rf.pred <- predict(model.rf, newdata = wine[, -1])
+model.rf.c.mat <- confusionMatrix(model.rf.pred, wine$Class)
+names(model.rf.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
+model.rf.c.mat$table
+#Prediction class_1 class_2 class_3
+#class_1      59       0       0
+#class_2       0      71       0
+#class_3       0       0      48
+
+model.rf.c.mat$overall
 
 
 # (2) a Support Vector Machine
