@@ -384,6 +384,17 @@ model.rf.c.mat$overall
 
 
 # (2) a Support Vector Machine
+ptm <- proc.time() # Start the clock!
+svm.control <- trainControl(method = "repeatedcv",
+                            number = 10, repeats = 3,
+                            classProbs = T, savePred = T, verboseIter = T)
+#names(getModelInfo())
+set.seed(123)
+model.svm.CV <- train(Class ~ ., data = wine, method = "svmRadial", # or svmRadialWeights? -- same results
+                      trControl = svm.control) # metric="ROC" doesn't do anything for this model
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#56.205   3.504  59.877
 
 
 # (3) a neural network model
