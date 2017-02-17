@@ -382,7 +382,7 @@ model.rf.c.mat$table
 
 model.rf.c.mat$overall
 
-
+# -------------------------------------------------------------------------#
 # (2) a Support Vector Machine
 ptm <- proc.time() # Start the clock!
 svm.control <- trainControl(method = "repeatedcv",
@@ -390,14 +390,88 @@ svm.control <- trainControl(method = "repeatedcv",
                             classProbs = T, savePred = T, verboseIter = T)
 #names(getModelInfo())
 set.seed(123)
-model.svm.CV <- train(Class ~ ., data = wine, method = "svmRadial", # or svmRadialWeights? -- same results
+model.svm <- train(Class ~ ., data = wine, method = "svmRadial", # or svmRadialWeights? -- same results
                       trControl = svm.control) # metric="ROC" doesn't do anything for this model
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#56.205   3.504  59.877
+#7.545   0.298   7.901 
 
+print(model.svm)
+#Support Vector Machines with Radial Basis Function Kernel 
 
+#178 samples
+#13 predictor
+#3 classes: 'class_1', 'class_2', 'class_3' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 160, 160, 161, 160, 162, 160, ... 
+#Resampling results across tuning parameters:
+  
+#  C     Accuracy   Kappa    
+#0.25  0.9755740  0.9627100
+#0.50  0.9774259  0.9655402
+#1.00  0.9792777  0.9683704
+
+#Tuning parameter 'sigma' was held constant at a value of 0.07665756
+#Accuracy was used to select the optimal model using  the largest value.
+#The final values used for the model were sigma = 0.07665756 and C = 1.
+
+model.svm$finalModel
+#Support Vector Machine object of class "ksvm" 
+
+#SV type: C-svc  (classification) 
+#parameter : cost C = 1 
+
+#Gaussian Radial Basis kernel function. 
+#Hyperparameter : sigma =  0.0766575562502905 
+
+#Number of Support Vectors : 69 
+
+#Objective Function Value : -12.1162 -4.5981 -12.5011 
+#Training error : 0 
+#Probability model included.
+
+model.svm.pred <- predict(model.svm, newdata = wine[, -1])
+model.svm.c.mat <- confusionMatrix(model.svm.pred, wine$Class)
+model.svm.c.mat$table
+#Prediction class_1 class_2 class_3
+#class_1      59       0       0
+#class_2       0      71       0
+#class_3       0       0      48
+
+model.svm.c.mat$overall
+
+# -------------------------------------------------------------------------#
 # (3) a neural network model
+ptm <- proc.time() # Start the clock!
+nnet.control <- trainControl(method = "repeatedcv",
+                            number = 10, repeats = 3,
+                            classProbs = T, savePred = T, verboseIter = T)
+#names(getModelInfo())
+set.seed(123)
+model.nnet <- train(Class ~ ., data = wine, method = "nnet",
+                   trControl = nnet.control) # metric="ROC" doesn't do anything for this model
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#7.545   0.298   7.901 
+
+print(model.nnet)
+
+model.nnet$finalModel
+
+
+model.snnet.pred <- predict(model.nnet, newdata = wine[, -1])
+model.nnet.c.mat <- confusionMatrix(model.nnet.pred, wine$Class)
+model.nnet.c.mat$table
+#Prediction class_1 class_2 class_3
+#class_1      59       0       0
+#class_2       0      71       0
+#class_3       0       0      48
+
+model.nnet.c.mat$overall
+
+
 
 #######################################################
 # END
