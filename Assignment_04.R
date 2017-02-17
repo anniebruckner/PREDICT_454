@@ -9,7 +9,7 @@
 # Workspace Setup
 #######################################################
 
-# Install Packages if they don't current exist
+# Install Packages if they don't currently exist
 list.of.packages <- c("doBy"
                       ,"lazyeval"
                       ,"psych"
@@ -37,7 +37,13 @@ list.of.packages <- c("doBy"
                       ,"foreach"
                       ,"parallel"
                       ,"lattice"
-                      ,"caret")
+                      ,"caret"
+                      ,"plyr"
+                      ,"dplyr"
+                      ,"car"
+                      ,"pROC"
+                      ,"bestglm"
+                      ,"neuralnet")
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -317,8 +323,8 @@ model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
 importance(model.RF)
 varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
 
-levels(wine$Class) <- c("class_1", "class_2", "class_3")
-# Did the above code because I was getting the following error when I ran the model:
+levels(wine$Class) <- c("Class_1", "Class_2", "Class_3")
+# Did the above code because I was getting the following error when I ran the model.rf:
 # Error in train.default(x, y, weights = w, ...) : 
 #At least one of the class levels is not a valid R variable name;
 #This will cause errors when class probabilities are generated because
@@ -332,28 +338,30 @@ control.rf <- trainControl(method = "repeatedcv",
 ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.rf <- train(x = wine[, -1], y = wine[, 1], data = wine, method="rf", trControl = control.rf)
+proc.time() - ptm # Stop the clock
 #    user  system elapsed 
-#9.330   0.469   9.872
+#8.638   0.464   9.169
+
 
 #model.rf2 <- train(Class ~ ., data = wine, method="rf", trControl = control.rf)
-proc.time() - ptm # Stop the clock
 #user  system elapsed 
 #8.788   0.410   9.277
 
 print(model.rf) # model.rf and model.rf2 have the same results--just checking
+#Random Forest
 #178 samples
 #13 predictor
-#3 classes: 'class_1', 'class_2', 'class_3' 
+#3 classes: 'Class_1', 'Class_2', 'Class_3' 
 
 #No pre-processing
 #Resampling: Cross-Validated (10 fold, repeated 3 times) 
 #Summary of sample sizes: 160, 160, 161, 160, 162, 160, ... 
 #Resampling results across tuning parameters:
   
-#  mtry  Accuracy   Kappa    
-#2    0.9866852  0.9798844
-#7    0.9775119  0.9660152
-#13    0.9661693  0.9486708
+#mtry  Accuracy      Kappa       
+#2    0.9866851565  0.9798843968
+#7    0.9775118966  0.9660151983
+#13    0.9661693040  0.9486707565
 
 #Accuracy was used to select the optimal model using  the largest value.
 #The final value used for the model was mtry = 2.
@@ -366,21 +374,24 @@ model.rf$finalModel
 
 #OOB estimate of  error rate: 1.12%
 #Confusion matrix:
-#  class_1 class_2 class_3 class.error
-#class_1      59       0       0  0.00000000
-#class_2       1      69       1  0.02816901
-#class_3       0       0      48  0.00000000
+#Class_1 Class_2 Class_3   class.error
+#Class_1      59       0       0 0.00000000000
+#Class_2       1      69       1 0.02816901408
+#Class_3       0       0      48 0.00000000000
 
 model.rf.pred <- predict(model.rf, newdata = wine[, -1])
 model.rf.c.mat <- confusionMatrix(model.rf.pred, wine$Class)
 names(model.rf.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
 model.rf.c.mat$table
-#Prediction class_1 class_2 class_3
-#class_1      59       0       0
-#class_2       0      71       0
-#class_3       0       0      48
+#Prediction Class_1 Class_2 Class_3
+#Class_1      59       0       0
+#Class_2       0      71       0
+#Class_3       0       0      48
 
 model.rf.c.mat$overall
+#Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
+#1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
+
 
 # -------------------------------------------------------------------------#
 # (2) a Support Vector Machine
@@ -390,8 +401,8 @@ svm.control <- trainControl(method = "repeatedcv",
                             classProbs = T, savePred = T, verboseIter = T)
 #names(getModelInfo())
 set.seed(123)
-model.svm <- train(Class ~ ., data = wine, method = "svmRadial", # or svmRadialWeights? -- same results
-                      trControl = svm.control) # metric="ROC" doesn't do anything for this model
+model.svm <- train(Class ~ ., data = wine, method = "svmRadial", # or svmRadialWeights?
+                      trControl = svm.control)
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
 #7.545   0.298   7.901 
@@ -409,9 +420,9 @@ print(model.svm)
 #Resampling results across tuning parameters:
   
 #  C     Accuracy   Kappa    
-#0.25  0.9755740  0.9627100
-#0.50  0.9774259  0.9655402
-#1.00  0.9792777  0.9683704
+#0.25  0.9755740454  0.9627100236
+#0.50  0.9774258973  0.9655402123
+#1.00  0.9792777491  0.9683704010
 
 #Tuning parameter 'sigma' was held constant at a value of 0.07665756
 #Accuracy was used to select the optimal model using  the largest value.
@@ -435,12 +446,15 @@ model.svm$finalModel
 model.svm.pred <- predict(model.svm, newdata = wine[, -1])
 model.svm.c.mat <- confusionMatrix(model.svm.pred, wine$Class)
 model.svm.c.mat$table
-#Prediction class_1 class_2 class_3
-#class_1      59       0       0
-#class_2       0      71       0
-#class_3       0       0      48
+#Prediction Class_1 Class_2 Class_3
+#Class_1      59       0       0
+#Class_2       0      71       0
+#Class_3       0       0      48
 
 model.svm.c.mat$overall
+#Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
+#1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
+
 
 # -------------------------------------------------------------------------#
 # (3) a neural network model
@@ -451,27 +465,118 @@ nnet.control <- trainControl(method = "repeatedcv",
 #names(getModelInfo())
 set.seed(123)
 model.nnet <- train(Class ~ ., data = wine, method = "nnet",
-                   trControl = nnet.control) # metric="ROC" doesn't do anything for this model
+                   trControl = nnet.control)
 proc.time() - ptm # Stop the clock
 #user  system elapsed 
-#7.545   0.298   7.901 
+#6.788   0.549   7.416  
 
 print(model.nnet)
+#Neural Network 
+
+#178 samples
+#13 predictor
+#3 classes: 'Class_1', 'Class_2', 'Class_3' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 160, 160, 161, 160, 162, 160, ... 
+#Resampling results across tuning parameters:
+  
+#  size  decay  Accuracy   Kappa     
+#1     0.0000  0.3992539560  0.00000000000
+#1     0.0001  0.3992539560  0.00000000000
+#1     0.1000  0.6439900814  0.42087424613
+#3     0.0000  0.4085132152  0.01559934319
+#3     0.0001  0.4177724745  0.03147297944
+#3     0.1000  0.9068598785  0.85408918106
+#5     0.0000  0.4237637599  0.04210671530
+#5     0.0001  0.4270317337  0.04635330768
+#5     0.1000  0.9242224229  0.88112962105
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final values used for the model were size = 5 and decay = 0.1. 
 
 model.nnet$finalModel
+#a 13-5-3 network with 88 weights
+#inputs: Alcohol Malic_Acid Ash Ash_Alcalinity Magnesium Total_Phenols Flavanoids Nonflavanoid_Phenols Proanthocyanins Color_Intensity Hue OD280_OD315 Proline 
+#output(s): .outcome 
+#options were - softmax modelling  decay=0.1
 
-
-model.snnet.pred <- predict(model.nnet, newdata = wine[, -1])
+model.nnet.pred <- predict(model.nnet, newdata = wine[, -1])
 model.nnet.c.mat <- confusionMatrix(model.nnet.pred, wine$Class)
 model.nnet.c.mat$table
-#Prediction class_1 class_2 class_3
-#class_1      59       0       0
-#class_2       0      71       0
-#class_3       0       0      48
+#Prediction Class_1 Class_2 Class_3
+#Class_1      59       0       0
+#Class_2       0      71       0
+#Class_3       0       0      48
 
 model.nnet.c.mat$overall
+#Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
+#9.943820e-01   9.914612e-01   9.690977e-01   9.998578e-01   3.988764e-01   2.395450e-69            NaN
+
+m <- model.matrix(~ Class, data = wine)
+
+model.nnet2 <- neuralnet(Class ~ Alcohol+Malic_Acid+Ash+Ash_Alcalinity+Magnesium+Total_Phenols+Flavanoids
+                         +Nonflavanoid_Phenols+Proanthocyanins+Color_Intensity+Hue+OD280_OD315+Proline,
+                         data = m, hidden=2, err.fct="sse", linear.output=FALSE)
 
 
+plot(model.nnet2)
+
+# Encode as a one hot vector multilabel data
+wine <- cbind(wine[, 2:14], class.ind(as.factor(wine$Class)))
+
+# Set up formula
+n <- names(wine)
+f <- as.formula(paste("Class_1 + Class_2 + Class_3 ~", paste(n[!n %in% c("Class_1","Class_2","Class_3")], collapse = " + ")))
+f
+
+set.seed(123)
+model.nnet2 <- neuralnet(f, data = wine, hidden=2, err.fct="sse", linear.output=FALSE)
+model.nnet2$result.matrix
+#                                   1
+#error                              29.691533166661
+#reached.threshold                   0.007680079688
+#steps                            1873.000000000000
+#Intercept.to.1layhid1              -0.560475646552
+#Alcohol.to.1layhid1                -0.230177489483
+#Malic_Acid.to.1layhid1              1.558708314149
+#Ash.to.1layhid1                     0.070508391425
+#Ash_Alcalinity.to.1layhid1          0.129287735161
+#Magnesium.to.1layhid1               1.715064986883
+#Total_Phenols.to.1layhid1           0.460916205989
+#Flavanoids.to.1layhid1             -1.265061234607
+#Nonflavanoid_Phenols.to.1layhid1   -0.686852851894
+#Proanthocyanins.to.1layhid1        -0.445661970100
+#Color_Intensity.to.1layhid1         1.224081797439
+#Hue.to.1layhid1                     0.359813827057
+#OD280_OD315.to.1layhid1             0.400771450594
+#Proline.to.1layhid1                 0.110682715945
+#Intercept.to.1layhid2              -1.471207499528
+#Alcohol.to.1layhid2                 1.676009100557
+#Malic_Acid.to.1layhid2              4.062152525901
+#Ash.to.1layhid2                    -2.169840310304
+#Ash_Alcalinity.to.1layhid2         -3.018885193119
+#Magnesium.to.1layhid2              -0.313648150140
+#Total_Phenols.to.1layhid2           1.829345601937
+#Flavanoids.to.1layhid2              4.549266173528
+#Nonflavanoid_Phenols.to.1layhid2  -14.161074197383
+#Proanthocyanins.to.1layhid2        -0.658618882272
+#Color_Intensity.to.1layhid2        -1.477108545396
+#Hue.to.1layhid2                    -3.637280246460
+#OD280_OD315.to.1layhid2             2.238205793393
+#Proline.to.1layhid2                 0.069026263826
+#Intercept.to.Class_1               -3.248905434374
+#1layhid.1.to.Class_1               -0.856953576292
+#1layhid.2.to.Class_1               12.912692632755
+#Intercept.to.Class_2               -0.418262885912
+#1layhid.1.to.Class_2                0.771934258125
+#1layhid.2.to.Class_2               -4.857663244921
+#Intercept.to.Class_3               -0.101402634479
+#1layhid.1.to.Class_3               -0.234343462017
+#1layhid.2.to.Class_3             -181.327636586456
+
+plot(model.nnet2)
 
 #######################################################
 # END
