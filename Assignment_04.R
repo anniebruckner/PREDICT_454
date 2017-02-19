@@ -310,6 +310,7 @@ model.lda4 <- lda(Class ~ Flavanoids + Proline + Color_Intensity + Ash_Alcalinit
 plot(model.lda4)
 
 # Create Random Forest model
+set.seed(123)
 model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
 importance(model.RF)
 varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
@@ -408,6 +409,8 @@ model.rf$finalModel
 #Class_2       1      69       1 0.02816901408
 #Class_3       0       0      48 0.00000000000
 
+# why the confusion matrices don't match: http://stats.stackexchange.com/questions/175236/why-does-randomforest-confusion-matrix-not-match-the-one-i-calculate-using-predi
+
 model.rf.pred <- predict(model.rf, newdata = wine[, -1])
 model.rf.c.mat <- confusionMatrix(model.rf.pred, wine[, 1])
 names(model.rf.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
@@ -421,6 +424,8 @@ model.rf.c.mat$overall
 #Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
 #1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
 
+varImpPlot(model.rf$finalModel, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+plot(varImp(model.rf))
 
 ptm <- proc.time() # Start the clock!
 control.rf.oob <- trainControl(method = "oob",
@@ -541,6 +546,7 @@ model.svm.c.mat$overall
 #Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
 #1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
 
+plot(varImp(model.svm),layout = c(1, 3), strip = strip.custom(bg="lightgrey"))
 
 #x = wine[, -1], y = wine[, 1]
 ptm <- proc.time() # Start the clock!
@@ -650,7 +656,7 @@ model.nnet$finalModel
 #options were - softmax modelling  decay=0.1
 
 model.nnet.pred <- predict(model.nnet, newdata = wine[, -1])
-model.nnet.c.mat <- confusionMatrix(model.nnet.pred, wine$Class)
+model.nnet.c.mat <- confusionMatrix(model.nnet.pred, wine[,1])
 model.nnet.c.mat$table
 #Prediction Class_1 Class_2 Class_3
 #Class_1      59       0       0
@@ -662,6 +668,10 @@ model.nnet.c.mat$overall
 #9.943820e-01   9.914612e-01   9.690977e-01   9.998578e-01   3.988764e-01   2.395450e-69            NaN
 
 plot(model.nnet)
+
+#######################################################
+# END
+#######################################################
 
 # How to get neuralnet to work with factors: https://www.r-bloggers.com/multilabel-classification-with-neuralnet-package/
 # Encode as a one hot vector multilabel data
@@ -729,11 +739,6 @@ plot(model.nnet2)
 #model.nnet2.pred <- predict(model.nnet2, newdata = wine[, -1])
 #model.nnet2.c.mat <- confusionMatrix(model.nnet2.pred, wine$Class)
 #model.nnet2.c.mat$table
-
-#######################################################
-# END
-#######################################################
-
 
 
 #m <- model.matrix(~ Class, data = wine)
