@@ -67,6 +67,8 @@ head(wine)
 # Data Quality Check
 #######################################################
 
+# Maybe normalize the data: https://medium.com/autonomous-agents/how-to-train-your-neuralnetwork-for-wine-tasting-1b49e0adff3a#.1tpn0wvzb
+
 # Explore the data -- how big is it, what types of variables included, distributions and missing values.
 class(wine) # data.frame
 dim(wine) # 178  14
@@ -319,9 +321,36 @@ varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How
 # (1) Random Forest
 
 # Create Random Forest model
+set.seed(123)
 model.RF <- randomForest(Class~., data = wine, mtry=13, ntree =25)
 importance(model.RF)
-varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance") # How to do in Lattice?
+#MeanDecreaseGini
+#Alcohol                 11.6206021409
+#Malic_Acid               1.1164253670
+#Ash                      0.5279954467
+#Ash_Alcalinity           1.1887627480
+#Magnesium                0.4291428571
+#Total_Phenols            0.0000000000
+#Flavanoids              25.1380480765
+#Nonflavanoid_Phenols     0.0000000000
+#Proanthocyanins          0.8726242957
+#Color_Intensity         22.6599585177
+#Hue                      1.6122292878
+#OD280_OD315             19.3411866391
+#Proline                 32.0224628257
+
+varImpPlot(model.RF, main = "Random Forest Model: \n Variable Importance")
+
+model.RF.pred <- predict(model.RF, newdata = wine[, -1])
+model.RF.c.mat <- confusionMatrix(model.RF.pred, wine$Class)
+names(model.RF.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
+model.RF.c.mat$table
+#           Reference
+#Prediction  1  2  3
+#          1 59  0  0
+#          2  0 71  0
+#          3  0  0 48
+
 
 levels(wine$Class) <- c("Class_1", "Class_2", "Class_3")
 # Did the above code because I was getting the following error when I ran the model.rf:
@@ -331,11 +360,11 @@ levels(wine$Class) <- c("Class_1", "Class_2", "Class_3")
 #the variables names will be converted to  X1, X2, X3 . Please use
 #factor levels that can be used as valid R variable names  (see ?make.names for help).
 
+ptm <- proc.time() # Start the clock!
 control.rf <- trainControl(method = "repeatedcv",
                              number = 10, repeats = 3,
                              classProbs = T, savePred = T, verboseIter = T)
 
-ptm <- proc.time() # Start the clock!
 set.seed(123)
 model.rf <- train(x = wine[, -1], y = wine[, 1], data = wine, method="rf", trControl = control.rf)
 proc.time() - ptm # Stop the clock
@@ -380,7 +409,7 @@ model.rf$finalModel
 #Class_3       0       0      48 0.00000000000
 
 model.rf.pred <- predict(model.rf, newdata = wine[, -1])
-model.rf.c.mat <- confusionMatrix(model.rf.pred, wine$Class)
+model.rf.c.mat <- confusionMatrix(model.rf.pred, wine[, 1])
 names(model.rf.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
 model.rf.c.mat$table
 #Prediction Class_1 Class_2 Class_3
@@ -391,6 +420,63 @@ model.rf.c.mat$table
 model.rf.c.mat$overall
 #Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
 #1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
+
+
+ptm <- proc.time() # Start the clock!
+control.rf.oob <- trainControl(method = "oob",
+                           classProbs = T, savePred = T, verboseIter = T)
+
+set.seed(123)
+model.rf.oob <- train(x = wine[, -1], y = wine[, 1], data = wine, method="rf", trControl = control.rf.oob)
+proc.time() - ptm # Stop the clock
+#   user  system elapsed 
+#0.848   0.085   0.942
+
+print(model.rf.oob)
+#Random Forest 
+
+#178 samples
+#13 predictor
+#3 classes: 'Class_1', 'Class_2', 'Class_3' 
+
+#No pre-processing
+#Resampling results across tuning parameters:
+  
+#  mtry  Accuracy      Kappa       
+#2    0.9887640449  0.9829608003
+#7    0.9775280899  0.9659395331
+#13    0.9719101124  0.9573775202
+
+#Accuracy was used to select the optimal model using  the largest value.
+#The final value used for the model was mtry = 2.
+
+model.rf.oob$finalModel
+#Call:
+#  randomForest(x = x, y = y, mtry = param$mtry, data = ..1) 
+#Type of random forest: classification
+#Number of trees: 500
+#No. of variables tried at each split: 2
+
+#OOB estimate of  error rate: 1.69%
+#Confusion matrix:
+#  Class_1 Class_2 Class_3   class.error
+#Class_1      59       0       0 0.00000000000
+#Class_2       1      68       2 0.04225352113
+#Class_3       0       0      48 0.00000000000
+
+model.rf.oob.pred <- predict(model.rf.oob, newdata = wine[, -1])
+model.rf.oob.c.mat <- confusionMatrix(model.rf.oob.pred, wine[, 1])
+names(model.rf.oob.c.mat) # "positive" "table"    "overall"  "byClass"  "mode"     "dots"
+model.rf.oob.c.mat$table
+#Prediction Class_1 Class_2 Class_3
+#Class_1      59       0       0
+#Class_2       0      71       0
+#Class_3       0       0      48
+
+model.rf.oob.c.mat$overall
+#Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
+#1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
+
 
 
 # -------------------------------------------------------------------------#
@@ -412,7 +498,7 @@ print(model.svm)
 
 #178 samples
 #13 predictor
-#3 classes: 'class_1', 'class_2', 'class_3' 
+#3 classes: 'Class_1', 'Class_2', 'Class_3' 
 
 #No pre-processing
 #Resampling: Cross-Validated (10 fold, repeated 3 times) 
@@ -444,7 +530,7 @@ model.svm$finalModel
 #Probability model included.
 
 model.svm.pred <- predict(model.svm, newdata = wine[, -1])
-model.svm.c.mat <- confusionMatrix(model.svm.pred, wine$Class)
+model.svm.c.mat <- confusionMatrix(model.svm.pred, wine[, 1])
 model.svm.c.mat$table
 #Prediction Class_1 Class_2 Class_3
 #Class_1      59       0       0
@@ -455,6 +541,67 @@ model.svm.c.mat$overall
 #Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
 #1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
 
+
+#x = wine[, -1], y = wine[, 1]
+ptm <- proc.time() # Start the clock!
+svm.control <- trainControl(method = "repeatedcv",
+                            number = 10, repeats = 3,
+                            classProbs = T, savePred = T, verboseIter = T)
+#names(getModelInfo())
+set.seed(123)
+model.svm2 <- train(x = wine[, -1], y = wine[, 1], data = wine, method = "svmRadial", # or svmRadialWeights?
+                   trControl = svm.control)
+proc.time() - ptm # Stop the clock
+#user  system elapsed 
+#7.545   0.298   7.901 
+
+print(model.svm2)
+#Support Vector Machines with Radial Basis Function Kernel 
+
+#178 samples
+#13 predictor
+#3 classes: 'Class_1', 'Class_2', 'Class_3' 
+
+#No pre-processing
+#Resampling: Cross-Validated (10 fold, repeated 3 times) 
+#Summary of sample sizes: 160, 160, 161, 160, 162, 160, ... 
+#Resampling results across tuning parameters:
+
+#  C     Accuracy   Kappa    
+#0.25  0.9755740454  0.9627100236
+#0.50  0.9774258973  0.9655402123
+#1.00  0.9792777491  0.9683704010
+
+#Tuning parameter 'sigma' was held constant at a value of 0.07665756
+#Accuracy was used to select the optimal model using  the largest value.
+#The final values used for the model were sigma = 0.07665756 and C = 1.
+
+model.svm2$finalModel
+#Support Vector Machine object of class "ksvm" 
+
+#SV type: C-svc  (classification) 
+#parameter : cost C = 1 
+
+#Gaussian Radial Basis kernel function. 
+#Hyperparameter : sigma =  0.0766575562502905 
+
+#Number of Support Vectors : 69 
+
+#Objective Function Value : -12.1162 -4.5981 -12.5011 
+#Training error : 0 
+#Probability model included.
+
+model.svm2.pred <- predict(model.svm2, newdata = wine[, -1])
+model.svm2.c.mat <- confusionMatrix(model.svm2.pred, wine[, 1])
+model.svm2.c.mat$table
+#Prediction Class_1 Class_2 Class_3
+#Class_1      59       0       0
+#Class_2       0      71       0
+#Class_3       0       0      48
+
+model.svm2.c.mat$overall
+#Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
+#1.000000e+00   1.000000e+00   9.794892e-01   1.000000e+00   3.988764e-01   8.896633e-72            NaN 
 
 # -------------------------------------------------------------------------#
 # (3) a neural network model
@@ -514,15 +661,9 @@ model.nnet.c.mat$overall
 #Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull AccuracyPValue  McnemarPValue 
 #9.943820e-01   9.914612e-01   9.690977e-01   9.998578e-01   3.988764e-01   2.395450e-69            NaN
 
-m <- model.matrix(~ Class, data = wine)
+plot(model.nnet)
 
-model.nnet2 <- neuralnet(Class ~ Alcohol+Malic_Acid+Ash+Ash_Alcalinity+Magnesium+Total_Phenols+Flavanoids
-                         +Nonflavanoid_Phenols+Proanthocyanins+Color_Intensity+Hue+OD280_OD315+Proline,
-                         data = m, hidden=2, err.fct="sse", linear.output=FALSE)
-
-
-plot(model.nnet2)
-
+# How to get neuralnet to work with factors: https://www.r-bloggers.com/multilabel-classification-with-neuralnet-package/
 # Encode as a one hot vector multilabel data
 wine <- cbind(wine[, 2:14], class.ind(as.factor(wine$Class)))
 
@@ -578,6 +719,25 @@ model.nnet2$result.matrix
 
 plot(model.nnet2)
 
+# Compute predictions
+#model.nnet2.pred <- compute(model.nnet2, wine[, 1:13])
+
+# Extract results
+#pr.nn_ <- pr.nn$net.result
+#head(pr.nn_)
+
+#model.nnet2.pred <- predict(model.nnet2, newdata = wine[, -1])
+#model.nnet2.c.mat <- confusionMatrix(model.nnet2.pred, wine$Class)
+#model.nnet2.c.mat$table
+
 #######################################################
 # END
 #######################################################
+
+
+
+#m <- model.matrix(~ Class, data = wine)
+
+#model.nnet3 <- neuralnet(Class_1 + Class_2 + Class_3 ~ Alcohol+Malic_Acid+Ash+Ash_Alcalinity+Magnesium+Total_Phenols+Flavanoids
+#                         +Nonflavanoid_Phenols+Proanthocyanins+Color_Intensity+Hue+OD280_OD315+Proline,
+#                         data = m, hidden=2, err.fct="sse", linear.output=FALSE)
